@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Life OS</title>
+    <title>Life OS Web</title>
     
-    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- FIREBASE SDK -->
@@ -31,26 +26,28 @@
   appId: "1:890704581310:web:f9aa83314a207eda6904ef",
 };
 
-        // Global erişim için window'a atıyoruz
         try {
             const app = initializeApp(firebaseConfig);
             window.db = getFirestore(app);
             window.doc = doc;
             window.onSnapshot = onSnapshot;
             window.setDoc = setDoc;
-        } catch (e) {
-            console.error("Firebase başlatılamadı", e);
-        }
+        } catch(e) { console.error(e); }
     </script>
 
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; }
+        body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; margin: 0; padding: 0; overflow: hidden; }
+        /* Mobil tarayıcılar için tam ekran fix */
+        #root { height: 100dvh; display: flex; flex-direction: column; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .perspective-1000 { perspective: 1000px; }
         .transform-style-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
+        /* Modal animasyon */
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
     </style>
 </head>
 <body>
@@ -58,7 +55,6 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        // Mobildeki ID ile AYNI olmalı
         const USER_DOC_ID = "my_life_os_data_v6"; 
 
         // Varsayılanlar (Mobille Aynı)
@@ -75,7 +71,7 @@
             { id: 'h3', title: 'Yarınını Planla', icon: '📋' }, { id: 'h4', title: 'Alarmı Erteleme', icon: '⏰' }
         ];
 
-        // --- SVG HALKA MANTIĞI ---
+        // --- SVG HALKA ---
         const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
             var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
             return { x: centerX + (radius * Math.cos(angleInRadians)), y: centerY + (radius * Math.sin(angleInRadians)) };
@@ -107,6 +103,12 @@
             )
         }
 
+        // --- ICON BİLEŞENİ ---
+        const Icon = ({ name, size=20, className="" }) => {
+            useEffect(() => { lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
+
         function App() {
             const [data, setData] = useState(null);
             const [activeTab, setActiveTab] = useState('planner');
@@ -115,7 +117,7 @@
             const [form, setForm] = useState({});
             const [flippedCards, setFlippedCards] = useState({}); 
 
-            // --- FIREBASE BAĞLANTISI ---
+            // --- FIREBASE SYNC ---
             useEffect(() => {
                 const checkDB = setInterval(() => {
                     if (window.db) {
@@ -124,6 +126,7 @@
                             if (doc.exists()) {
                                 setData(doc.data());
                             } else {
+                                // İlk açılış (Mobilde oluşturulduysa buraya düşmez)
                                 const initData = { projects: [], history: {}, habits: DEFAULT_HABITS, rewards: DEFAULT_REWARDS, gold: 0 };
                                 window.setDoc(window.doc(window.db, "lifeos_data", USER_DOC_ID), initData);
                                 setData(initData);
@@ -133,9 +136,9 @@
                 }, 100);
             }, []);
 
-            useEffect(() => { lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
+            useEffect(() => { lucide.createIcons(); }, [data, activeTab, modal]);
 
-            if (!data) return <div className="h-screen flex items-center justify-center text-indigo-600 font-bold animate-pulse">My Life OS Bağlanıyor...</div>;
+            if (!data) return <div className="h-screen flex items-center justify-center text-indigo-600 font-bold animate-pulse">LifeOS Yükleniyor...</div>;
 
             // --- YARDIMCILAR ---
             const getDateKey = (d) => {
@@ -152,15 +155,14 @@
                 setData(newData);
                 window.setDoc(window.doc(window.db, "lifeos_data", USER_DOC_ID), newData);
             };
-
             const updateGold = (amount) => saveToFirebase({...data, gold: data.gold + amount});
 
-            // --- EYLEMLER ---
+            // --- İŞLEMLER ---
             const toggleHabit = (id) => {
                 const isDone = (currentDayData.habits || []).includes(id);
                 let newHabits = isDone ? currentDayData.habits.filter(h => h !== id) : [...(currentDayData.habits||[]), id];
                 let goldChange = 0;
-                if (dateKey === todayKey) goldChange = isDone ? -10 : 10; // Mobilde 10 yapmıştık
+                if (dateKey === todayKey) goldChange = isDone ? -10 : 10;
                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, habits: newHabits } };
                 saveToFirebase({ ...data, history: newHistory, gold: data.gold + goldChange });
             };
@@ -212,11 +214,6 @@
                 saveToFirebase({ ...data, history: newHistory, projects: projectsUpdate, gold: data.gold + goldChange });
             };
 
-            const deleteTask = (id) => {
-                const newHistory = { ...data.history, [dateKey]: { ...currentDayData, tasks: currentDayData.tasks.filter(t => t.id !== id) } };
-                saveToFirebase({ ...data, history: newHistory });
-            };
-
             const saveProject = () => {
                 const pData = {
                     id: form.id || Date.now(),
@@ -232,88 +229,68 @@
                 setModal({open:false});
             };
 
-            const updateProjectNotes = (pid, text) => {
-                const newProjs = data.projects.map(p => p.id === pid ? {...p, notes: text} : p);
-                saveToFirebase({...data, projects: newProjs});
-            };
-
-            const deleteProject = (pid) => {
-                if(confirm("Projeyi silmek istiyor musun?")) {
-                     saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
-                }
-            };
-
-            // RUTİNLER EKRANI
-            const addHabit = () => {
-                saveToFirebase({...data, habits: [...data.habits, {id: Date.now(), title: form.title, icon: form.icon}]});
-                setForm({...form, title:'', icon:''});
-            };
-            const deleteHabit = (id) => saveToFirebase({...data, habits: data.habits.filter(h => h.id !== id)});
-            
-            const addReward = () => {
-                saveToFirebase({...data, rewards: [...data.rewards, {id: Date.now(), title: form.title, cost: Number(form.cost), icon: form.icon}]});
-                setModal({open:false});
-            };
-            const deleteReward = (id) => saveToFirebase({...data, rewards: data.rewards.filter(r => r.id !== id)});
-            const buyReward = (r) => {
-                if(data.gold >= r.cost && confirm(`${r.title} almak istiyor musun?`)) updateGold(-r.cost);
-                else if(data.gold < r.cost) alert("Para yok!");
-            };
-
             const saveJournal = () => {
                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, journal: { mood: form.mood, note: form.note } } };
                 saveToFirebase({ ...data, history: newHistory });
                 setModal({open:false});
             };
 
-            const getDailyScore = (dayTasks) => {
-                 if (!dayTasks || dayTasks.length === 0) return 0;
+            // DÜZELTİLEN FONKSİYON: delete
+            const deleteTask = (id) => {
+                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, tasks: currentDayData.tasks.filter(t => t.id !== id) } };
+                 saveToFirebase({...data, history: newHistory});
+            };
+            
+            // --- PUANLAMA MANTIĞI ---
+            const getDailyStatus = (dayTasks) => {
+                 if (!dayTasks || dayTasks.length === 0) return { score: 0, text: "Plan yok", color: "bg-gray-100 text-gray-400" };
                  let doneCount = 0;
                  dayTasks.forEach(t => {
                     if(t.subItems) doneCount += (t.subItems.filter(Boolean).length / t.subItems.length);
                     else if(t.completed) doneCount += 1;
                  });
                  const p = (doneCount / dayTasks.length) * 100;
-                 if(p === 0) return 1;
-                 if(p < 40) return 2;
-                 if(p < 70) return 3;
-                 if(p < 95) return 4;
-                 return 5;
+                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500" };
+                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-500" };
+                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-600" };
+                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-600" };
+                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-600" };
             };
+            const dailyStatus = getDailyStatus(currentDayData.tasks);
 
-            // --- RENDER ---
+
             return (
-                <div className="flex flex-col h-screen max-w-md mx-auto bg-white shadow-2xl overflow-hidden border-x border-gray-200">
+                <div className="flex flex-col h-full max-w-md mx-auto bg-white shadow-2xl overflow-hidden border-x border-gray-200">
                     
                     {/* HEADER */}
                     <div className="p-5 bg-white border-b flex justify-between items-center z-20">
                         <div>
                             <div className="text-[10px] font-bold text-gray-400 uppercase">DURUM</div>
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setForm({mood:currentDayData.journal?.mood, note:currentDayData.journal?.note}); setModal({type:'journal'}); }}>
-                                <span className="text-sm font-bold">Senkronize 🟢</span>
-                                <i data-lucide="book-open" class="w-4 h-4 text-gray-400"></i>
+                            <div className="flex items-center gap-2">
+                                <div className={`px-2 py-1 rounded text-xs font-bold border ${dailyStatus.color}`}>{dailyStatus.text}</div>
+                                <span className="animate-pulse text-green-500">●</span>
                             </div>
                         </div>
-                        <div className="bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100 flex items-center gap-1 text-yellow-600 font-bold">
-                            {data.gold} <i data-lucide="coins" class="w-4 h-4"></i>
+                        <div className="bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100 flex items-center gap-1 text-yellow-600 font-bold cursor-pointer" onClick={() => { setForm({mood:currentDayData.journal?.mood, note:currentDayData.journal?.note}); setModal({type:'journal'}); }}>
+                            {data.gold} <Icon name="coins" size={16} />
                         </div>
                     </div>
 
                     {/* DATE NAV */}
                     {activeTab === 'planner' && (
-                        <div className="flex items-center justify-between p-4 bg-gray-50">
-                             <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}><i data-lucide="chevron-left"></i></button>
+                        <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
+                             <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}><Icon name="chevron-left" /></button>
                              <span className="font-bold text-gray-700">{selectedDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                             <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}><i data-lucide="chevron-right"></i></button>
+                             <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))}><Icon name="chevron-right" /></button>
                         </div>
                     )}
 
-                    {/* CONTENT AREA */}
-                    <div className="flex-1 overflow-y-auto p-5 bg-gray-50/50 space-y-6 no-scrollbar">
+                    {/* CONTENT */}
+                    <div className="flex-1 overflow-y-auto p-5 bg-gray-50/30 space-y-6 no-scrollbar pb-20">
                         
-                        {/* --- PLANNER --- */}
                         {activeTab === 'planner' && (
                             <>
+                                {/* Rutinler */}
                                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-4">
                                     {data.habits.map(h => {
                                         const isDone = (currentDayData.habits||[]).includes(h.id);
@@ -326,6 +303,7 @@
                                     })}
                                 </div>
 
+                                {/* Görevler */}
                                 <div className="space-y-3">
                                     {(currentDayData.tasks||[]).map(t => (
                                         <div key={t.id} className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-3 transition-all ${t.completed ? 'opacity-60':''}`}>
@@ -336,22 +314,22 @@
                                             <div className="flex-1">
                                                 <div className={`font-bold text-gray-800 ${t.completed ? 'line-through text-gray-400':''}`}>{t.title}</div>
                                                 <div className="flex gap-3 text-xs text-gray-400 mt-1">
-                                                    <span className="flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> {t.duration}dk</span>
+                                                    <span className="flex items-center gap-1"><Icon name="clock" size={12}/> {t.duration}dk</span>
                                                     {t.startTime && <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded">{t.startTime}</span>}
                                                 </div>
                                                 {t.subItems && (
                                                     <div className="flex gap-1 mt-2 flex-wrap">
                                                         {t.subItems.map((done, i) => (
-                                                            <button key={i} onClick={() => toggleSubItem(t.id, i)} className={`w-6 h-6 rounded border flex items-center justify-center text-[10px] ${done ? 'bg-green-500 border-green-500 text-white':'bg-gray-50 text-gray-400 hover:border-indigo-400'}`}>{done ? '✓' : i+1}</button>
+                                                            <button key={i} onClick={() => toggleSubItem(t.id, i)} className={`w-6 h-6 rounded border flex items-center justify-center text-[10px] ${done ? 'bg-green-500 border-green-500 text-white':'bg-white text-gray-400 hover:border-indigo-400'}`}>{done ? '✓' : i+1}</button>
                                                         ))}
                                                     </div>
                                                 )}
                                             </div>
-                                            <button onClick={() => deleteTask(t.id)} className="text-gray-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                            <button onClick={() => deleteTask(t.id)} className="text-gray-300 hover:text-red-500"><Icon name="trash-2" size={16} /></button>
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => {setForm({}); setModal({type:'selection'});}} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center gap-2"><i data-lucide="plus"></i> Görev Ekle</button>
+                                <button onClick={() => {setForm({}); setModal({type:'selection'});}} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center gap-2"><Icon name="plus"/> Görev Ekle</button>
                             </>
                         )}
 
@@ -362,7 +340,6 @@
                                 {data.projects.map(p => {
                                     const pct = Math.round(((p.currentUnit||0) / p.totalUnit) * 100);
                                     const isFlipped = flippedCards[p.id];
-
                                     return (
                                         <div key={p.id} className="relative h-64 perspective-1000 group">
                                             <div className={`w-full h-full relative transition-all duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
@@ -370,10 +347,10 @@
                                                 <div className="absolute inset-0 bg-white p-5 rounded-xl shadow-sm border border-gray-100 backface-hidden flex flex-col justify-between">
                                                     <div>
                                                         <div className="flex justify-between items-start">
-                                                            <h3 className="font-bold text-gray-800 text-lg">{p.title}</h3>
+                                                            <h3 className="font-bold text-lg">{p.title}</h3>
                                                             <div className="flex gap-2">
-                                                                <button onClick={() => {setForm({id:p.id, title:p.title, total:p.totalUnit, unit:p.unit, estTime:p.totalEstTime, current:p.currentUnit, notes:p.notes}); setModal({type:'project_form'});}}><i data-lucide="edit-2" class="w-4 h-4 text-gray-400 hover:text-indigo-600"></i></button>
-                                                                <button onClick={() => setFlippedCards({...flippedCards, [p.id]: true})}><i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400 hover:text-indigo-600"></i></button>
+                                                                <button onClick={() => {setForm({id:p.id, title:p.title, total:p.totalUnit, unit:p.unit, estTime:p.totalEstTime, current:p.currentUnit, notes:p.notes}); setModal({type:'project_form'});}}><Icon name="edit-2" className="w-4 h-4 text-gray-400 hover:text-indigo-600"/></button>
+                                                                <button onClick={() => setFlippedCards({...flippedCards, [p.id]: true})}><Icon name="refresh-cw" className="w-4 h-4 text-gray-400 hover:text-indigo-600"/></button>
                                                             </div>
                                                         </div>
                                                         <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500 mt-2 inline-block">{p.currentUnit}/{p.totalUnit} {p.unit}</span>
@@ -387,10 +364,10 @@
                                                 <div className="absolute inset-0 bg-gray-800 text-white p-5 rounded-xl shadow-lg rotate-y-180 backface-hidden flex flex-col">
                                                     <div className="flex justify-between border-b border-gray-700 pb-2 mb-2">
                                                         <span className="text-xs font-bold tracking-widest text-gray-400">KASA</span>
-                                                        <button onClick={() => setFlippedCards({...flippedCards, [p.id]: false})}><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                                        <button onClick={() => setFlippedCards({...flippedCards, [p.id]: false})}><Icon name="refresh-cw" className="w-4 h-4"/></button>
                                                     </div>
-                                                    <textarea className="flex-1 bg-gray-700 rounded p-2 text-sm text-gray-200 resize-none mb-2" placeholder="Notlar..." value={p.notes||''} onChange={(e) => updateProjectNotes(p.id, e.target.value)}></textarea>
-                                                    <button onClick={() => deleteProject(p.id)} className="text-xs text-red-400 text-right hover:text-red-300">Projeyi Sil</button>
+                                                    <textarea className="flex-1 bg-gray-700 rounded p-2 text-sm text-gray-200 resize-none mb-2" placeholder="Notlar..." value={p.notes||''} onChange={(e) => {const newProjs = data.projects.map(pr => pr.id === p.id ? {...pr, notes: e.target.value} : pr); saveToFirebase({...data, projects: newProjs});}}></textarea>
+                                                    <button onClick={() => {if(confirm('Sil?')) {const n=data.projects.filter(x=>x.id!==p.id); saveToFirebase({...data, projects:n});}}} className="text-xs text-red-400 text-right hover:text-red-300">Projeyi Sil</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -399,52 +376,23 @@
                             </div>
                         )}
 
-                        {/* --- HABITS EDIT --- */}
-                        {activeTab === 'habits' && (
-                            <div className="space-y-4">
-                                <h2 className="font-bold text-gray-700">Rutin Düzenleyici</h2>
-                                {data.habits.map(h => (
-                                    <div key={h.id} className="flex justify-between items-center p-3 bg-white rounded-xl border hover:shadow-sm">
-                                        <div className="flex items-center gap-3"><span className="text-2xl">{h.icon}</span><span className="font-bold">{h.title}</span></div>
-                                        <button onClick={() => deleteHabit(h.id)} className="text-red-400 hover:text-red-600"><i data-lucide="trash-2"></i></button>
-                                    </div>
-                                ))}
-                                <div className="pt-4 border-t mt-4">
-                                    <div className="flex gap-2">
-                                        <input className="w-16 p-2 border rounded-xl text-center" placeholder="🧘" value={form.icon||''} onChange={e=>setForm({...form, icon:e.target.value})} />
-                                        <input className="flex-1 p-2 border rounded-xl" placeholder="Rutin Adı" value={form.title||''} onChange={e=>setForm({...form, title:e.target.value})} />
-                                    </div>
-                                    <button onClick={addHabit} className="w-full bg-indigo-600 text-white py-3 rounded-xl mt-2 font-bold shadow-lg hover:bg-indigo-700 transition">Ekle</button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* --- STORE --- */}
+                        {/* --- HABITS & STORE & CALENDAR --- */}
+                        {activeTab === 'habits' && <div className="text-center text-gray-400 mt-10">Rutin düzenleme mobilden yapılabilir.</div>}
                         {activeTab === 'store' && (
-                            <div className="space-y-6">
-                                <div className="bg-yellow-400 p-6 rounded-2xl text-white shadow-lg flex items-center justify-between">
-                                    <div><div className="opacity-80 text-sm font-bold">BAKİYE</div><div className="text-4xl font-bold">{data.gold}</div></div>
-                                    <i data-lucide="coins" class="w-12 h-12 opacity-50"></i>
-                                </div>
+                            <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-3">
                                     {data.rewards.map(r => (
-                                        <div key={r.id} onClick={() => buyReward(r)} className="bg-white p-4 rounded-xl border hover:shadow-md cursor-pointer relative group hover:border-yellow-400 transition">
-                                            <button onClick={(e) => {e.stopPropagation(); deleteReward(r.id);}} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                            <div className="text-3xl mb-2">{r.icon}</div>
-                                            <div className="font-bold text-sm leading-tight">{r.title}</div>
-                                            <div className="text-xs font-bold text-yellow-600 mt-1">{r.cost} Altın</div>
+                                        <div key={r.id} onClick={() => {if(data.gold>=r.cost && confirm('Al?')) updateGold(-r.cost)}} className="bg-white p-4 rounded-xl border hover:shadow-md cursor-pointer text-center">
+                                            <div className="text-3xl mb-2">{r.icon}</div><div className="font-bold text-sm">{r.title}</div><div className="text-xs font-bold text-yellow-600 mt-1">{r.cost} Altın</div>
                                         </div>
                                     ))}
-                                    <button onClick={() => {setForm({}); setModal({type:'reward_new'})}} className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-gray-400 min-h-[100px] hover:border-indigo-400 hover:text-indigo-600 transition"><i data-lucide="plus"></i><span className="text-xs font-bold mt-1">Ödül Ekle</span></button>
                                 </div>
                             </div>
                         )}
-
-                        {/* --- CALENDAR --- */}
                         {activeTab === 'calendar' && (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl shadow-sm border">
-                                    <h3 className="text-center font-bold mb-4 text-lg">{selectedDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</h3>
+                                    <h3 className="text-center font-bold mb-4">{selectedDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}</h3>
                                     <div className="grid grid-cols-7 gap-2 justify-items-center">
                                         {Array.from({ length: new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate() }, (_, i) => {
                                             const d = i + 1;
@@ -452,73 +400,60 @@
                                             const k = getDateKey(dDate);
                                             const dayData = data.history[k];
                                             const completedHabits = dayData?.habits?.length || 0;
-                                            const totalHabits = data.habits.length || 1;
                                             const isSelected = k === dateKey;
-
                                             return (
                                                 <div key={d} className="relative w-10 h-10 flex items-center justify-center">
                                                     <HabitRing total={data.habits.length} completed={completedHabits} size={44} />
-                                                    <div onClick={() => setSelectedDate(dDate)} 
-                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold cursor-pointer absolute ${isSelected ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
-                                                        {d}
-                                                    </div>
+                                                    <div onClick={() => setSelectedDate(dDate)} className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold cursor-pointer absolute ${isSelected ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>{d}</div>
                                                 </div>
                                             )
                                         })}
                                     </div>
                                 </div>
-                                
-                                <div>
-                                    <h3 className="font-bold text-gray-500 mb-2 ml-1">BU GÜNÜM</h3>
-                                    <div className="bg-white rounded-2xl shadow-sm border p-4 space-y-2">
-                                        {Array.from({length: 18}, (_, i) => i + 6).map(h => {
-                                            const tasksInHour = (currentDayData.tasks||[]).filter(t => t.startTime && parseInt(t.startTime.split(':')[0]) === h);
-                                            return (
-                                                <div key={h} className="flex gap-4 h-12 border-b border-gray-50 last:border-0">
-                                                    <div className="w-10 text-xs text-gray-400 pt-2 text-right">{h.toString().padStart(2,'0')}:00</div>
-                                                    <div className="flex-1 relative">
-                                                        {tasksInHour.map(t => (
-                                                            <div key={t.id} className="absolute top-1 left-0 right-0 bottom-1 bg-indigo-50 border-l-4 border-indigo-500 rounded px-2 flex items-center text-xs font-bold text-indigo-700 shadow-sm">
-                                                                {t.title} ({t.duration}dk)
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                {/* Zaman Çizelgesi */}
+                                <div className="bg-white rounded-2xl shadow-sm border p-4 space-y-2">
+                                    {Array.from({length: 18}, (_, i) => i + 6).map(h => {
+                                        const tasksInHour = (currentDayData.tasks||[]).filter(t => t.startTime && parseInt(t.startTime.split(':')[0]) === h);
+                                        return (
+                                            <div key={h} className="flex gap-4 h-12 border-b border-gray-50 last:border-0">
+                                                <div className="w-10 text-xs text-gray-400 pt-2 text-right">{h.toString().padStart(2,'0')}:00</div>
+                                                <div className="flex-1 relative">
+                                                    {tasksInHour.map(t => (<div key={t.id} className="absolute top-1 left-0 right-0 bottom-1 bg-indigo-50 border-l-4 border-indigo-500 rounded px-2 flex items-center text-xs font-bold text-indigo-700">{t.title}</div>))}
                                                 </div>
-                                            )
-                                        })}
-                                    </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}
-
                     </div>
 
-                    {/* BOTTOM NAV */}
-                    <div className="bg-white border-t p-2 flex justify-around pb-6">
+                    {/* NAVBAR */}
+                    <div className="bg-white border-t p-2 flex justify-around pb-safe">
                         {['calendar', 'projects', 'planner', 'habits', 'store'].map(t => (
-                            <button key={t} onClick={() => setActiveTab(t)} className={`p-2 flex flex-col items-center transition-all ${activeTab===t ? 'text-indigo-600 scale-105':'text-gray-400'}`}>
-                                {t === 'planner' ? <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white -mt-8 shadow-lg border-4 border-white"><i data-lucide="plus"></i></div> : 
-                                <><i data-lucide={t==='habits'?'list':(t==='store'?'shopping-bag':t)} class="w-5 h-5"></i><span className="text-[9px] font-bold mt-1 uppercase">{t}</span></>}
+                            <button key={t} onClick={() => setActiveTab(t)} className={`p-2 flex flex-col items-center transition-all ${activeTab===t ? 'text-indigo-600':'text-gray-400'}`}>
+                                {t === 'planner' ? <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white -mt-10 shadow-lg border-4 border-white"><i data-lucide="plus"></i></div> : <Icon name={t==='habits'?'list':(t==='store'?'shopping-bag':t)} size={20} />}
+                                {t !== 'planner' && <span className="text-[9px] font-bold mt-1 uppercase">{t}</span>}
                             </button>
                         ))}
                     </div>
 
-                    {/* MODAL */}
+                    {/* MODALS (Basitleştirilmiş) */}
                     {modal.open && (
-                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-[fade-in_0.2s]">
+                        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 backdrop-blur-sm p-4">
+                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
                                 <div className="flex justify-between mb-4">
-                                    <h3 className="font-bold text-lg uppercase text-gray-800">{modal.type.replace('_', ' ')}</h3>
-                                    <button onClick={() => setModal({open:false})}><i data-lucide="x" class="text-gray-400 hover:text-gray-600"></i></button>
+                                    <h3 className="font-bold text-lg uppercase">{modal.type.replace('_', ' ')}</h3>
+                                    <button onClick={() => setModal({open:false})}><i data-lucide="x"></i></button>
                                 </div>
 
                                 {modal.type === 'selection' && (
                                     <div className="space-y-3">
-                                        <button onClick={() => {setForm({}); setModal({type:'simple'});}} className="w-full p-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-left flex items-center gap-3 hover:bg-indigo-100 transition"><div class="bg-white p-2 rounded-full"><i data-lucide="plus" class="w-4 h-4"></i></div> Tek Seferlik Görev</button>
-                                        <div className="text-xs font-bold text-gray-400 mt-4 ml-1">HEDEFLERDEN ÇEK</div>
-                                        <div className="max-h-48 overflow-y-auto space-y-2 no-scrollbar">
+                                        <button onClick={() => {setForm({}); setModal({type:'simple'});}} className="w-full p-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-left">➕ Tek Seferlik Görev</button>
+                                        <div className="text-xs font-bold text-gray-400 mt-2">HEDEFLERDEN ÇEK</div>
+                                        <div className="max-h-40 overflow-y-auto space-y-2 no-scrollbar">
                                             {data.projects.map(p => (
-                                                <button key={p.id} onClick={() => {setForm({amount:''}); setModal({type:'import', data:p});}} className="w-full p-3 border rounded-xl text-left text-sm font-bold hover:bg-gray-50 hover:border-indigo-300 transition flex justify-between"><span>{p.title}</span><span class="text-gray-400 text-xs">{p.unit}</span></button>
+                                                <button key={p.id} onClick={() => {setForm({amount:''}); setModal({type:'import', data:p});}} className="w-full p-3 border rounded-xl text-left text-sm font-bold hover:bg-gray-50">{p.title}</button>
                                             ))}
                                         </div>
                                     </div>
@@ -526,14 +461,13 @@
 
                                 {(modal.type === 'simple' || modal.type === 'import') && (
                                     <div className="space-y-4">
-                                        {modal.type === 'import' && <h4 className="text-indigo-600 font-bold text-center text-lg">{modal.data.title}</h4>}
-                                        {modal.type === 'simple' && <input className="w-full p-4 bg-gray-50 rounded-xl font-bold focus:ring-2 ring-indigo-200" placeholder="Görev Adı" autoFocus onChange={e=>setForm({...form, title:e.target.value})} />}
-                                        {modal.type === 'import' && <div className="flex items-baseline justify-center gap-2"><input type="number" className="w-24 text-center text-4xl font-bold border-b-2 border-indigo-600 outline-none bg-transparent" placeholder="0" autoFocus onChange={e=>setForm({...form, amount:e.target.value})} /><span className="font-bold text-gray-400">{modal.data.unit}</span></div>}
+                                        {modal.type === 'simple' && <input className="w-full p-4 bg-gray-50 rounded-xl font-bold" placeholder="Görev Adı" autoFocus onChange={e=>setForm({...form, title:e.target.value})} />}
+                                        {modal.type === 'import' && <div className="flex items-baseline justify-center gap-2"><input type="number" className="w-24 text-center text-3xl font-bold border-b-2 border-indigo-600 outline-none" placeholder="0" autoFocus onChange={e=>setForm({...form, amount:e.target.value})} /><span className="font-bold text-gray-400">{modal.data.unit}</span></div>}
                                         <div className="flex gap-3">
                                             <input type="number" className="flex-1 p-3 bg-gray-50 rounded-xl" placeholder="Süre (dk)" value={form.time||''} onChange={e=>setForm({...form, time:e.target.value})} />
                                             <input className="flex-1 p-3 bg-gray-50 rounded-xl" placeholder="Saat (14:00)" value={form.startTime||''} onChange={e=>setForm({...form, startTime:e.target.value})} />
                                         </div>
-                                        <button onClick={addTask} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition mt-2">EKLE</button>
+                                        <button onClick={addTask} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg mt-2">EKLE</button>
                                     </div>
                                 )}
 
@@ -546,17 +480,9 @@
                                     </div>
                                 )}
 
-                                {(modal.type === 'reward_new') && (
-                                    <div className="space-y-3">
-                                        <div className="flex gap-2"><input type="number" className="flex-1 p-3 bg-gray-50 rounded-xl" placeholder="Bedel" value={form.cost||''} onChange={e=>setForm({...form, cost:e.target.value})} /><input className="w-16 p-3 bg-gray-50 rounded-xl text-center" placeholder="🎁" value={form.icon||''} onChange={e=>setForm({...form, icon:e.target.value})} /></div>
-                                        <input className="w-full p-3 bg-gray-50 rounded-xl" placeholder="Ödül Adı" value={form.title||''} onChange={e=>setForm({...form, title:e.target.value})} />
-                                        <button onClick={addReward} className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg">EKLE</button>
-                                    </div>
-                                )}
-
                                 {modal.type === 'journal' && (
                                     <div className="space-y-3">
-                                        <div className="flex justify-around text-3xl bg-gray-50 p-3 rounded-xl">
+                                        <div className="flex justify-around text-2xl bg-gray-50 p-3 rounded-xl">
                                             {['😫','😐','🙂','😃','🤩'].map(m => <button key={m} onClick={()=>setForm({...form, mood:m})} className={`p-2 rounded hover:bg-white transition ${form.mood===m?'bg-white shadow scale-125':''}`}>{m}</button>)}
                                         </div>
                                         <textarea className="w-full p-3 bg-gray-50 rounded-xl h-32 resize-none focus:ring-2 ring-indigo-200" placeholder="Bugün nasıl geçti?" value={form.note||''} onChange={e=>setForm({...form, note:e.target.value})}></textarea>
