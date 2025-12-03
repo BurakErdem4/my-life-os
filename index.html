@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life OS Web</title>
+    <title>My Life OS</title>
     
-    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- FIREBASE SDK -->
@@ -21,7 +16,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- 🔥 BURAYI MOBİL UYGULAMADAN ALDIĞIN BİLGİLERLE DOLDUR ---
+        // --- 🔥 BURAYI KENDİ BİLGİLERİNLE DOLDUR ---
          const firebaseConfig = {
   apiKey: "AIzaSyB_zE9V8BtMtDjCyeT2FW8IqTe7CN4cSL8",
   authDomain: "lifeos-app-82013.firebaseapp.com",
@@ -31,34 +26,30 @@
   appId: "1:890704581310:web:f9aa83314a207eda6904ef",
 };
 
-        // Config kontrolü ve başlatma
-        if (firebaseConfig.apiKey !== "BURAYA_API_KEY_YAPISTIR") {
-            try {
-                const app = initializeApp(firebaseConfig);
-                window.db = getFirestore(app);
-                window.doc = doc;
-                window.onSnapshot = onSnapshot;
-                window.setDoc = setDoc;
-            } catch(e) { console.error("Firebase Hatası:", e); }
-        } else {
-            window.configError = true;
-        }
+        try {
+            const app = initializeApp(firebaseConfig);
+            window.db = getFirestore(app);
+            window.doc = doc;
+            window.onSnapshot = onSnapshot;
+            window.setDoc = setDoc;
+        } catch(e) { console.error("Firebase Hatası:", e); }
     </script>
 
     <style>
+        /* Mobil App Hissiyatı İçin Sabit Düzen */
         body { 
             font-family: 'Inter', system-ui, sans-serif; 
             background-color: #e5e7eb; 
             margin: 0; 
             padding: 0; 
-            height: 100dvh; 
+            height: 100dvh; /* Mobil tarayıcı fix */
             display: flex; 
             justify-content: center; 
             overflow: hidden; 
         }
         #root { 
             width: 100%; 
-            max-width: 28rem; 
+            max-width: 28rem; /* 450px civarı */
             height: 100%; 
             background-color: white; 
             display: flex; 
@@ -66,14 +57,36 @@
             position: relative; 
             box-shadow: 0 0 20px rgba(0,0,0,0.1); 
         }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* Flip Card Stilleri */
         .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+        .flipped {
+            transform: rotateY(180deg);
+        }
         
+        /* Animasyonlar */
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
     </style>
@@ -82,87 +95,69 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         const USER_DOC_ID = "my_life_os_data_v6"; 
 
-        // Varsayılanlar
-        const DEFAULT_HABITS = [{ id: 'h1', title: 'Yatağı Topla', icon: '🛏️' }, { id: 'h2', title: 'Kitap Oku', icon: '📖' }];
-        const DEFAULT_REWARDS = [{ id: 1, title: "Kahve", cost: 20, icon: "☕" }];
+        // --- VARSAYILANLAR (Mobille Aynı) ---
+        const DEFAULT_REWARDS = [
+            { id: 1, title: "1 Bölüm Dizi", cost: 50, icon: "🎬" }, { id: 2, title: "Kahve Molası", cost: 20, icon: "☕" },
+            { id: 3, title: "30 Dk Oyun", cost: 40, icon: "🎮" }, { id: 4, title: "Tatlı/Çikolata", cost: 30, icon: "🍫" },
+            { id: 5, title: "Geç Uyanma", cost: 80, icon: "🛌" }, { id: 6, title: "Dışarıda Yemek", cost: 150, icon: "🍔" },
+            { id: 7, title: "20 dk Sosyal Medya", cost: 25, icon: "📱" }, { id: 8, title: "Yeni Kitap", cost: 200, icon: "📚" },
+            { id: 9, title: "Film Gecesi", cost: 100, icon: "🍿" }, { id: 10, title: "Tembellik Hakkı", cost: 60, icon: "🦥" },
+            { id: 11, title: "1 Bölüm Anime", cost: 25, icon: "🍥" }
+        ];
 
-        // --- GÜVENLİ ICON BİLEŞENİ (HATA DÜZELTİLDİ) ---
-        const Icon = ({ name, size=20, className="", color="currentColor" }) => {
-            // kebab-case -> camelCase dönüşümü (örn: shopping-bag -> shoppingBag)
-            const iconName = name.split('-').map((part, index) => {
-                if (index === 0) return part;
-                return part.charAt(0).toUpperCase() + part.slice(1);
-            }).join('');
+        const DEFAULT_HABITS = [
+            { id: 'h1', title: 'Yatağı Topla', icon: '🛏️' }, { id: 'h2', title: 'Kitap Oku', icon: '📖' },
+            { id: 'h3', title: 'Yarınını Planla', icon: '📋' }, { id: 'h4', title: 'Alarmı Erteleme', icon: '⏰' }
+        ];
 
-            const iconNode = lucide.icons[iconName];
-            if (!iconNode) return null;
+        // --- HALKA ÇİZİMİ ---
+        const describeArc = (x, y, radius, startAngle, endAngle) => {
+            const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+                var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+                return { x: centerX + (radius * Math.cos(angleInRadians)), y: centerY + (radius * Math.sin(angleInRadians)) };
+            }
+            var start = polarToCartesian(x, y, radius, endAngle);
+            var end = polarToCartesian(x, y, radius, startAngle);
+            var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
+        }
 
-            const svgHtml = iconNode.toSvg({
-                class: className,
-                width: size,
-                height: size,
-                stroke: color,
-                "stroke-width": "2",
-                "stroke-linecap": "round",
-                "stroke-linejoin": "round"
-            });
-
-            return <span dangerouslySetInnerHTML={{ __html: svgHtml }} style={{display:'flex', alignItems:'center', justifyContent:'center'}} />;
-        };
-
-        // --- SVG HALKA ---
         const HabitRing = ({ total, completed, size = 46 }) => {
             if (!total || total === 0) return null;
             const center = size / 2;
-            const radius = (size - 5) / 2;
+            const radius = (size - 6) / 2;
             const gap = total > 1 ? 12 : 0; 
             const segmentAngle = 360 / total;
             
-            const describeArc = (x, y, radius, startAngle, endAngle) => {
-                const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
-                    var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-                    return { x: centerX + (radius * Math.cos(angleInRadians)), y: centerY + (radius * Math.sin(angleInRadians)) };
-                }
-                var start = polarToCartesian(x, y, radius, endAngle);
-                var end = polarToCartesian(x, y, radius, startAngle);
-                var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-                return ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
-            }
-
+            // Tam ortalamak için style ayarları
             return (
-                <svg width={size} height={size} style={{position:'absolute', pointerEvents:'none', left:0, top:0}}>
-                    {Array.from({ length: total }).map((_, i) => {
-                        const start = i * segmentAngle + (gap/2);
-                        const end = (i + 1) * segmentAngle - (gap/2);
-                        const isCompleted = i < completed;
-                        const color = isCompleted ? "#EAB308" : "rgba(200, 200, 200, 0.2)"; 
-                        const strokeWidth = isCompleted ? 2.5 : 2;
-                        const effectiveEnd = total === 1 ? start + 359.9 : end;
-                        return <path key={i} d={describeArc(center, center, radius, start, effectiveEnd)} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" />
-                    })}
-                </svg>
+                <div style={{position:'absolute', top:0, left:0, width: '100%', height: '100%', display:'flex', justifyContent:'center', alignItems:'center', pointerEvents:'none'}}>
+                    <svg width={size} height={size}>
+                        {Array.from({ length: total }).map((_, i) => {
+                            const start = i * segmentAngle + (gap/2);
+                            const end = (i + 1) * segmentAngle - (gap/2);
+                            const isCompleted = i < completed;
+                            const color = isCompleted ? "#EAB308" : "rgba(200, 200, 200, 0.25)"; 
+                            const strokeWidth = isCompleted ? 2.5 : 2;
+                            const effectiveEnd = total === 1 ? start + 359.9 : end;
+                            return <path key={i} d={describeArc(center, center, radius, start, effectiveEnd)} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" />
+                        })}
+                    </svg>
+                </div>
             )
         }
 
-        function App() {
-            // --- CONFIG KONTROLÜ ---
-            if (window.configError) {
-                return (
-                    <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-4">
-                        <div className="bg-red-100 p-4 rounded-full text-red-500"><Icon name="alert-triangle" size={48} /></div>
-                        <h2 className="text-xl font-bold text-gray-800">Ayarlar Eksik!</h2>
-                        <p className="text-gray-500 text-sm">
-                            Lütfen <code>index.html</code> dosyasını açıp en üstteki 
-                            <strong> firebaseConfig</strong> kısmına kendi anahtarlarını yapıştır.
-                        </p>
-                        <div className="text-xs bg-gray-100 p-2 rounded border font-mono text-gray-600">apiKey: "BURAYA_..."</div>
-                    </div>
-                );
-            }
+        // --- ICON ---
+        const Icon = ({ name, size=20, className="", color="currentColor" }) => {
+            useEffect(() => { if(window.lucide) window.lucide.createIcons(); });
+            // Kebab-case düzeltmesi
+            return <i data-lucide={name} width={size} height={size} className={className} style={{color}}></i>;
+        };
 
+        function App() {
             const [data, setData] = useState(null);
             const [activeTab, setActiveTab] = useState('planner');
             const [selectedDate, setSelectedDate] = useState(new Date());
@@ -188,7 +183,15 @@
                 }, 200);
             }, []);
 
-            if (!data) return <div className="h-full w-full flex flex-col items-center justify-center text-indigo-600 font-bold animate-pulse"><Icon name="loader-2" size={32} className="animate-spin mb-2"/> Yükleniyor...</div>;
+            // İkonları güncelle
+            useEffect(() => { if(data) lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
+
+            if (!data) return (
+                <div className="h-full w-full flex flex-col items-center justify-center bg-white text-indigo-600 font-bold">
+                    <div className="animate-spin mb-4"><Icon name="loader-2" size={32}/></div>
+                    <div>Life OS Yükleniyor...</div>
+                </div>
+            );
 
             // --- YARDIMCILAR ---
             const getDateKey = (d) => {
@@ -216,7 +219,7 @@
                     else if(t.completed) doneCount += 1;
                  });
                  const p = (doneCount / dayTasks.length) * 100;
-                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 border-red-100 text-white" };
+                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 text-white" };
                  if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-600 border-orange-100" };
                  if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-700 border-yellow-100" };
                  if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-700 border-green-100" };
@@ -286,12 +289,23 @@
                 saveToFirebase({ ...data, history: newHistory });
             };
 
+            // Proje Kaydet (Ekle/Düzenle)
             const saveProject = () => {
                 const pData = {
-                    id: form.id || Date.now(), title: form.title, totalUnit: Number(form.total),
-                    currentUnit: Number(form.current) || 0, unit: form.unit, totalEstTime: Number(form.estTime), notes: form.notes || ''
+                    id: form.id || Date.now(),
+                    title: form.title,
+                    totalUnit: Number(form.total),
+                    currentUnit: Number(form.current) || 0,
+                    unit: form.unit,
+                    totalEstTime: Number(form.estTime),
+                    notes: form.notes || ''
                 };
-                let newProjs = form.id ? data.projects.map(p => p.id === form.id ? {...p, ...pData} : p) : [...data.projects, pData];
+                let newProjs;
+                if(form.id) { // Edit
+                    newProjs = data.projects.map(p => p.id === form.id ? {...p, ...pData} : p);
+                } else { // New
+                    newProjs = [...data.projects, pData];
+                }
                 saveToFirebase({...data, projects: newProjs});
                 setModal({open:false});
             };
@@ -302,9 +316,10 @@
             };
 
             const deleteProject = (pid) => {
-                if(confirm("Silmek istiyor musun?")) saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
+                if(confirm("Projeyi silmek istiyor musun?")) saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
             };
 
+            // Ekleme Silme
             const addHabit = () => {
                 saveToFirebase({...data, habits: [...data.habits, {id: Date.now(), title: form.title, icon: form.icon}]});
                 setForm({...form, title:'', icon:''});
@@ -327,16 +342,21 @@
                 setModal({open:false});
             };
 
+            // Modal Açma (Veri Doldurma)
             const openModal = (type, d=null) => {
                 setModal({ open: true, type, data: d });
                 setForm({});
                 if (type === 'project_form' && d) { 
-                    setForm({ id: d.id, title: d.title, total: d.totalUnit, unit: d.unit, estTime: d.totalEstTime, current: d.currentUnit, notes: d.notes });
+                    setForm({ 
+                        id: d.id, title: d.title, total: d.totalUnit, unit: d.unit, 
+                        estTime: d.totalEstTime, current: d.currentUnit, notes: d.notes 
+                    });
                 }
                 if (type === 'journal') {
                     setForm({ mood: currentDayData.journal?.mood, note: currentDayData.journal?.note });
                 }
             };
+
 
             // --- RENDER ---
             return (
@@ -356,7 +376,7 @@
                         </div>
                     </div>
 
-                    {/* DATE NAV (Planner only) */}
+                    {/* DATE NAV */}
                     {activeTab === 'planner' && (
                         <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100 shrink-0">
                              <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}><Icon name="chevron-left" /></button>
@@ -368,11 +388,13 @@
                         </div>
                     )}
 
-                    {/* CONTENT */}
+                    {/* SCROLLABLE CONTENT */}
                     <div className="flex-1 overflow-y-auto p-5 bg-gray-50/30 space-y-6 no-scrollbar pb-24">
                         
+                        {/* --- PLANNER --- */}
                         {activeTab === 'planner' && (
                             <>
+                                {/* Rutinler */}
                                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-4">
                                     {data.habits.map(h => {
                                         const isDone = (currentDayData.habits||[]).includes(h.id);
@@ -384,6 +406,8 @@
                                         )
                                     })}
                                 </div>
+
+                                {/* Görevler */}
                                 <div className="space-y-3">
                                     {(currentDayData.tasks||[]).map(t => (
                                         <div key={t.id} className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-3 transition-all ${t.completed ? 'opacity-60':''}`}>
@@ -424,7 +448,7 @@
                                         <div key={p.id} className="relative h-64 perspective-1000 group w-full">
                                             <div className={`w-full h-full relative transition-all duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
                                                 {/* Front */}
-                                                <div className="absolute inset-0 bg-white p-5 rounded-xl shadow-sm border border-gray-100 backface-hidden flex flex-col justify-between">
+                                                <div className="absolute inset-0 bg-white p-5 rounded-xl shadow-sm border border-gray-100 backface-hidden flex flex-col justify-between text-left">
                                                     <div>
                                                         <div className="flex justify-between items-start">
                                                             <h3 className="font-bold text-lg">{p.title}</h3>
@@ -441,7 +465,7 @@
                                                     </div>
                                                 </div>
                                                 {/* Back */}
-                                                <div className="absolute inset-0 bg-gray-800 text-white p-5 rounded-xl shadow-lg rotate-y-180 backface-hidden flex flex-col">
+                                                <div className="absolute inset-0 bg-gray-800 text-white p-5 rounded-xl shadow-lg rotate-y-180 backface-hidden flex flex-col text-left">
                                                     <div className="flex justify-between border-b border-gray-700 pb-2 mb-2">
                                                         <span className="text-xs font-bold tracking-widest text-gray-400">KASA</span>
                                                         <button onClick={() => setFlippedCards({...flippedCards, [p.id]: false})}><Icon name="refresh-cw" className="w-4 h-4"/></button>
@@ -580,8 +604,8 @@
 
                     {/* MODALS */}
                     {modal.open && (
-                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-slide-up">
-                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in">
+                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
                                 <div className="flex justify-between mb-4">
                                     <h3 className="font-bold text-lg uppercase text-gray-800">{modal.type.replace('_', ' ')}</h3>
                                     <button onClick={() => setModal({open:false})}><Icon name="x" className="text-gray-400 hover:text-gray-600"/></button>
