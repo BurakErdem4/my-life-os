@@ -36,14 +36,21 @@
     </script>
 
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; margin: 0; padding: 0; overflow: hidden; }
-        /* Mobil tarayıcılar için tam ekran fix */
-        #root { height: 100dvh; display: flex; flex-direction: column; max-width: 28rem; margin: 0 auto; background-color: white; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+        body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #e5e7eb; margin: 0; padding: 0; height: 100dvh; display: flex; justify-content: center; }
+        #root { width: 100%; max-width: 28rem; height: 100%; background-color: white; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Modal animasyon */
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
+        
+        /* Flip Card */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        
+        /* Animasyonlar */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
 <body>
@@ -54,18 +61,8 @@
         const USER_DOC_ID = "my_life_os_data_v6"; 
 
         // Varsayılanlar
-        const DEFAULT_REWARDS = [
-            { id: 1, title: "1 Bölüm Dizi", cost: 50, icon: "🎬" }, { id: 2, title: "Kahve Molası", cost: 20, icon: "☕" },
-            { id: 3, title: "30 Dk Oyun", cost: 40, icon: "🎮" }, { id: 4, title: "Tatlı/Çikolata", cost: 30, icon: "🍫" },
-            { id: 5, title: "Geç Uyanma", cost: 80, icon: "🛌" }, { id: 6, title: "Dışarıda Yemek", cost: 150, icon: "🍔" },
-            { id: 7, title: "20 dk Sosyal Medya", cost: 25, icon: "📱" }, { id: 8, title: "Yeni Kitap", cost: 200, icon: "📚" },
-            { id: 9, title: "Film Gecesi", cost: 100, icon: "🍿" }, { id: 10, title: "Tembellik Hakkı", cost: 60, icon: "🦥" },
-            { id: 11, title: "1 Bölüm Anime", cost: 25, icon: "🍥" }
-        ];
-        const DEFAULT_HABITS = [
-            { id: 'h1', title: 'Yatağı Topla', icon: '🛏️' }, { id: 'h2', title: 'Kitap Oku', icon: '📖' },
-            { id: 'h3', title: 'Yarınını Planla', icon: '📋' }, { id: 'h4', title: 'Alarmı Erteleme', icon: '⏰' }
-        ];
+        const DEFAULT_HABITS = [{ id: 'h1', title: 'Yatağı Topla', icon: '🛏️' }, { id: 'h2', title: 'Kitap Oku', icon: '📖' }];
+        const DEFAULT_REWARDS = [{ id: 1, title: "Kahve", cost: 20, icon: "☕" }];
 
         // --- SVG HALKA ---
         const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
@@ -85,12 +82,12 @@
             const gap = total > 1 ? 12 : 0; 
             const segmentAngle = 360 / total;
             return (
-                <svg width={size} height={size} style={{position:'absolute', pointerEvents:'none', left:0, top:0}}>
+                <svg width={size} height={size} style={{position:'absolute', pointerEvents:'none'}}>
                     {Array.from({ length: total }).map((_, i) => {
                         const start = i * segmentAngle + (gap/2);
                         const end = (i + 1) * segmentAngle - (gap/2);
                         const isCompleted = i < completed;
-                        const color = isCompleted ? "#EAB308" : "rgba(200, 200, 200, 0.15)"; 
+                        const color = isCompleted ? "#EAB308" : "rgba(200, 200, 200, 0.2)"; 
                         const strokeWidth = isCompleted ? 2.5 : 2;
                         const effectiveEnd = total === 1 ? start + 359.9 : end;
                         return <path key={i} d={describeArc(center, center, radius, start, effectiveEnd)} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" />
@@ -99,7 +96,7 @@
             )
         }
 
-        // --- ICON BİLEŞENİ ---
+        // --- ICON ---
         const Icon = ({ name, size=20, className="" }) => {
             useEffect(() => { lucide.createIcons(); }, [name]);
             return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -113,7 +110,7 @@
             const [form, setForm] = useState({});
             const [flippedCards, setFlippedCards] = useState({}); 
 
-            // --- FIREBASE BAĞLANTISI ---
+            // --- FIREBASE SYNC ---
             useEffect(() => {
                 const checkDB = setInterval(() => {
                     if (window.db) {
@@ -122,7 +119,6 @@
                             if (doc.exists()) {
                                 setData(doc.data());
                             } else {
-                                // İlk açılış
                                 const initData = { projects: [], history: {}, habits: DEFAULT_HABITS, rewards: DEFAULT_REWARDS, gold: 0 };
                                 window.setDoc(window.doc(window.db, "lifeos_data", USER_DOC_ID), initData);
                                 setData(initData);
@@ -132,9 +128,9 @@
                 }, 100);
             }, []);
 
-            useEffect(() => { lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
+            useEffect(() => { if(data) lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
 
-            if (!data) return <div className="h-screen flex items-center justify-center text-indigo-600 font-bold animate-pulse">LifeOS Yükleniyor...</div>;
+            if (!data) return <div className="h-screen flex flex-col items-center justify-center text-indigo-600 font-bold animate-pulse"><Icon name="loader-2" className="animate-spin mb-2"/> Yükleniyor...</div>;
 
             // --- YARDIMCILAR ---
             const getDateKey = (d) => {
@@ -153,7 +149,7 @@
             };
             const updateGold = (amount) => saveToFirebase({...data, gold: data.gold + amount});
 
-            // --- PUANLAMA ---
+            // --- PUANLAMA VE MESAJLAR ---
             const getDailyStatus = (dayTasks) => {
                  if (!dayTasks || dayTasks.length === 0) return { score: 0, text: "Plan yok", color: "bg-gray-100 text-gray-400 border-gray-200" };
                  let doneCount = 0;
@@ -170,7 +166,7 @@
             };
             const dailyStatus = getDailyStatus(currentDayData.tasks);
 
-            // --- EYLEMLER ---
+            // --- İŞLEMLER ---
             const toggleHabit = (id) => {
                 const isDone = (currentDayData.habits || []).includes(id);
                 let newHabits = isDone ? currentDayData.habits.filter(h => h !== id) : [...(currentDayData.habits||[]), id];
@@ -242,7 +238,12 @@
                     totalEstTime: Number(form.estTime),
                     notes: form.notes || ''
                 };
-                let newProjs = form.id ? data.projects.map(p => p.id === form.id ? {...p, ...pData} : p) : [...data.projects, pData];
+                let newProjs;
+                if (form.id) { // Düzenleme
+                    newProjs = data.projects.map(p => p.id === form.id ? {...p, ...pData} : p);
+                } else { // Yeni
+                    newProjs = [...data.projects, pData];
+                }
                 saveToFirebase({...data, projects: newProjs});
                 setModal({open:false});
             };
@@ -253,7 +254,7 @@
             };
 
             const deleteProject = (pid) => {
-                if(confirm("Silmek istediğine emin misin?")) {
+                if(confirm("Projeyi silmek istiyor musun?")) {
                      saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
                 }
             };
@@ -270,7 +271,7 @@
             };
             const deleteReward = (id) => saveToFirebase({...data, rewards: data.rewards.filter(r => r.id !== id)});
             const buyReward = (r) => {
-                if(data.gold >= r.cost && confirm(`${r.title} al?`)) updateGold(-r.cost);
+                if(data.gold >= r.cost && confirm(`${r.title} almak istiyor musun?`)) updateGold(-r.cost);
                 else if(data.gold < r.cost) alert("Para yok!");
             };
 
@@ -281,31 +282,31 @@
             };
 
             const openModal = (type, d=null) => {
-                setModal({open: true, type, data: d});
-                if(type === 'project_form') {
-                    if(d) setForm({ id: d.id, title: d.title, total: d.totalUnit, unit: d.unit, estTime: d.totalEstTime, current: d.currentUnit, notes: d.notes });
-                    else setForm({ title: '', total: '', unit: '', estTime: '', current: '' });
-                } else if(type === 'journal') {
-                    setForm({ mood: currentDayData.journal?.mood || '😐', note: currentDayData.journal?.note || '' });
-                } else {
-                    setForm({});
+                setModal({ open: true, type, data: d });
+                setForm({});
+                if (type === 'project_form' && d) { // Düzenleme Modu Veri Doldurma
+                    setForm({ 
+                        id: d.id, title: d.title, total: d.totalUnit, unit: d.unit, 
+                        estTime: d.totalEstTime, current: d.currentUnit, notes: d.notes 
+                    });
+                }
+                if (type === 'journal') {
+                    setForm({ mood: currentDayData.journal?.mood, note: currentDayData.journal?.note });
                 }
             };
 
+
             // --- RENDER ---
             return (
-                <div className="flex flex-col h-screen max-w-md mx-auto bg-white shadow-2xl overflow-hidden border-x border-gray-200 relative">
+                <div className="w-full h-full flex flex-col bg-white">
                     
                     {/* HEADER */}
                     <div className="p-5 bg-white border-b flex justify-between items-center z-20">
                         <div>
-                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">DURUM</div>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase">DURUM</div>
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => openModal('journal')}>
                                 <div className={`px-2 py-1 rounded text-xs font-bold border ${dailyStatus.color}`}>{dailyStatus.text}</div>
-                                <span className="relative flex h-3 w-3">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                                </span>
+                                <span className="animate-pulse text-green-500 text-xs">●</span>
                             </div>
                         </div>
                         <div className="bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100 flex items-center gap-1 text-yellow-600 font-bold">
@@ -325,34 +326,29 @@
                         </div>
                     )}
 
-                    {/* SCROLLABLE CONTENT */}
+                    {/* CONTENT AREA */}
                     <div className="flex-1 overflow-y-auto p-5 bg-gray-50/30 space-y-6 no-scrollbar pb-24">
                         
                         {/* --- PLANNER --- */}
                         {activeTab === 'planner' && (
                             <>
-                                {/* Rutinler */}
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                                    <div className="text-xs font-bold text-gray-400 mb-3 uppercase">Günlük Rutinler</div>
-                                    <div className="flex gap-4 overflow-x-auto whitespace-nowrap no-scrollbar pb-1">
-                                        {data.habits.map(h => {
-                                            const isDone = (currentDayData.habits||[]).includes(h.id);
-                                            return (
-                                                <div key={h.id} onClick={() => toggleHabit(h.id)} className="inline-flex flex-col items-center cursor-pointer group min-w-[60px]">
-                                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl border-2 transition-all ${isDone ? 'bg-indigo-100 border-indigo-500 scale-110' : 'bg-gray-50 border-gray-200 grayscale group-hover:grayscale-0'}`}>{h.icon}</div>
-                                                    <span className={`text-[10px] mt-2 font-bold ${isDone ? 'text-indigo-600':'text-gray-400'}`}>{h.title}</span>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
+                                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-4">
+                                    {data.habits.map(h => {
+                                        const isDone = (currentDayData.habits||[]).includes(h.id);
+                                        return (
+                                            <div key={h.id} onClick={() => toggleHabit(h.id)} className="inline-flex flex-col items-center cursor-pointer group min-w-[60px]">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl border-2 transition-all ${isDone ? 'bg-indigo-100 border-indigo-500 scale-110' : 'bg-gray-50 border-gray-200 grayscale group-hover:grayscale-0'}`}>{h.icon}</div>
+                                                <span className={`text-[10px] mt-2 font-bold ${isDone ? 'text-indigo-600':'text-gray-400'}`}>{h.title}</span>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
 
-                                {/* Görevler */}
                                 <div className="space-y-3">
                                     {(currentDayData.tasks||[]).map(t => (
                                         <div key={t.id} className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-3 transition-all ${t.completed ? 'opacity-60':''}`}>
                                             {t.type === 'simple' ? 
-                                                <button onClick={() => toggleTask(t.id)} className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${t.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-500'}`}><Icon name="check" size={14} /></button>
+                                                <button onClick={() => toggleTask(t.id)} className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${t.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-500'}`}>{t.completed && <Icon name="check" size={14} />}</button>
                                                 : <div className="mt-1 w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-[10px] font-bold text-indigo-600">{t.subItems.filter(Boolean).length}</div>
                                             }
                                             <div className="flex-1">
@@ -373,21 +369,20 @@
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => openModal('selection')} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center gap-2"><Icon name="plus"/> Görev Ekle</button>
+                                <button onClick={() => {setForm({}); setModal({type:'selection'});}} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center gap-2"><Icon name="plus"/> Görev Ekle</button>
                             </>
                         )}
 
                         {/* --- PROJECTS --- */}
                         {activeTab === 'projects' && (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-center"><h2 className="font-bold text-gray-700">Büyük Hedefler</h2><button onClick={() => openModal('project_form')} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded font-bold">+ YENİ</button></div>
+                                <div className="flex justify-between items-center"><h2 className="font-bold text-gray-700">Büyük Hedefler</h2><button onClick={() => {setForm({}); setModal({type:'project_form'});}} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded font-bold">+ YENİ</button></div>
                                 {data.projects.map(p => {
-                                    const pct = Math.min(100, Math.round(((p.currentUnit||0) / p.totalUnit) * 100));
+                                    const pct = Math.round(((p.currentUnit||0) / p.totalUnit) * 100);
                                     const isFlipped = flippedCards[p.id];
                                     return (
                                         <div key={p.id} className="relative h-64 perspective-1000 group">
                                             <div className={`w-full h-full relative transition-all duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
-                                                {/* Front */}
                                                 <div className="absolute inset-0 bg-white p-5 rounded-xl shadow-sm border border-gray-100 backface-hidden flex flex-col justify-between">
                                                     <div>
                                                         <div className="flex justify-between items-start">
@@ -404,7 +399,6 @@
                                                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-600 transition-all duration-500" style={{width: `${pct}%`}}></div></div>
                                                     </div>
                                                 </div>
-                                                {/* Back */}
                                                 <div className="absolute inset-0 bg-gray-800 text-white p-5 rounded-xl shadow-lg rotate-y-180 backface-hidden flex flex-col">
                                                     <div className="flex justify-between border-b border-gray-700 pb-2 mb-2">
                                                         <span className="text-xs font-bold tracking-widest text-gray-400">KASA</span>
@@ -420,14 +414,14 @@
                             </div>
                         )}
 
-                        {/* --- HABITS EDIT --- */}
+                        {/* --- HABITS --- */}
                         {activeTab === 'habits' && (
                             <div className="space-y-4">
                                 <h2 className="font-bold text-gray-700">Rutin Düzenleyici</h2>
                                 {data.habits.map(h => (
                                     <div key={h.id} className="flex justify-between items-center p-3 bg-white rounded-xl border hover:shadow-sm">
                                         <div className="flex items-center gap-3"><span className="text-2xl">{h.icon}</span><span className="font-bold">{h.title}</span></div>
-                                        <button onClick={() => deleteHabit(h.id)} className="text-red-400 hover:text-red-600"><Icon name="trash-2" /></button>
+                                        <button onClick={() => deleteHabit(h.id)} className="text-red-400"><Icon name="trash-2" /></button>
                                     </div>
                                 ))}
                                 <div className="pt-4 border-t mt-4">
@@ -435,7 +429,7 @@
                                         <input className="w-16 p-2 border rounded-xl text-center" placeholder="🧘" value={form.icon||''} onChange={e=>setForm({...form, icon:e.target.value})} />
                                         <input className="flex-1 p-2 border rounded-xl" placeholder="Rutin Adı" value={form.title||''} onChange={e=>setForm({...form, title:e.target.value})} />
                                     </div>
-                                    <button onClick={addHabit} className="w-full bg-indigo-600 text-white py-3 rounded-xl mt-2 font-bold shadow-lg hover:bg-indigo-700 transition">Ekle</button>
+                                    <button onClick={addHabit} className="w-full bg-indigo-600 text-white py-2 rounded mt-2 font-bold shadow-lg hover:bg-indigo-700 transition">Ekle</button>
                                 </div>
                             </div>
                         )}
@@ -456,7 +450,7 @@
                                             <div className="text-xs font-bold text-yellow-600 mt-1">{r.cost} Altın</div>
                                         </div>
                                     ))}
-                                    <button onClick={() => openModal('reward_new')} className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-gray-400 min-h-[100px] hover:border-indigo-400 hover:text-indigo-600 transition"><Icon name="plus"/><span className="text-xs font-bold mt-1">Ödül Ekle</span></button>
+                                    <button onClick={() => {setForm({}); setModal({type:'reward_new'})}} className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-gray-400 min-h-[100px] hover:border-indigo-400 hover:text-indigo-600"><Icon name="plus"/><span className="text-xs font-bold mt-1">Ödül Ekle</span></button>
                                 </div>
                             </div>
                         )}
@@ -473,12 +467,11 @@
                                             const k = getDateKey(dDate);
                                             const dayStat = data.history[k];
                                             const completedHabits = dayStat?.habits?.length || 0;
+                                            const totalHabits = data.habits.length || 1;
                                             const score = dayStat ? (dayStat.tasks && dayStat.tasks.length > 0 ? getDailyStatus(dayStat.tasks).score : 0) : 0;
                                             const isSelected = k === dateKey;
                                             let bg = 'bg-gray-50 text-gray-400';
-                                            if(score === 5) bg = 'bg-green-100 text-green-600';
-                                            else if(score >= 3) bg = 'bg-blue-100 text-blue-600';
-                                            else if(score > 0) bg = 'bg-orange-100 text-orange-600';
+                                            if(dayStat && dayStat.tasks && dayStat.tasks.length > 0) bg = 'bg-green-100 text-green-600';
                                             if (isSelected) bg = 'bg-indigo-600 text-white';
 
                                             return (
@@ -490,7 +483,7 @@
                                         })}
                                     </div>
                                 </div>
-                                
+                                {/* Zaman Çizelgesi */}
                                 <div>
                                     <h3 className="font-bold text-gray-500 mb-2 ml-1">BU GÜNÜM</h3>
                                     <div className="bg-white rounded-2xl shadow-sm border p-4 space-y-2">
@@ -524,7 +517,7 @@
 
                     {/* MODALS */}
                     {modal.open && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in">
+                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in">
                             <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
                                 <div className="flex justify-between mb-4">
                                     <h3 className="font-bold text-lg uppercase text-gray-800">{modal.type.replace('_', ' ')}</h3>
@@ -533,11 +526,11 @@
 
                                 {modal.type === 'selection' && (
                                     <div className="space-y-3">
-                                        <button onClick={() => openModal('simple')} className="w-full p-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-left flex items-center gap-3 hover:bg-indigo-100 transition"><div class="bg-white p-2 rounded-full"><Icon name="plus" className="w-4 h-4"/></div> Tek Seferlik Görev</button>
+                                        <button onClick={() => {setForm({}); setModal({type:'simple'});}} className="w-full p-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-left flex items-center gap-3 hover:bg-indigo-100 transition"><div class="bg-white p-2 rounded-full"><Icon name="plus" className="w-4 h-4"/></div> Tek Seferlik Görev</button>
                                         <div className="text-xs font-bold text-gray-400 mt-4 ml-1">HEDEFLERDEN ÇEK</div>
                                         <div className="max-h-48 overflow-y-auto space-y-2 no-scrollbar">
                                             {data.projects.map(p => (
-                                                <button key={p.id} onClick={() => openModal('import', p)} className="w-full p-3 border rounded-xl text-left text-sm font-bold hover:bg-gray-50 hover:border-indigo-300 transition flex justify-between"><span>{p.title}</span><span class="text-gray-400 text-xs">{p.unit}</span></button>
+                                                <button key={p.id} onClick={() => {setForm({amount:''}); setModal({type:'import', data:p});}} className="w-full p-3 border rounded-xl text-left text-sm font-bold hover:bg-gray-50 hover:border-indigo-300 transition flex justify-between"><span>{p.title}</span><span class="text-gray-400 text-xs">{p.unit}</span></button>
                                             ))}
                                         </div>
                                     </div>
