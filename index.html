@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Life OS</title>
+    <title>Life OS Web</title>
     
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- FIREBASE SDK -->
@@ -16,29 +21,51 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- 🔥 BURAYI MOBİL UYGULAMADAKİ AYNISIYLA DOLDUR ---
+        // --- 🔥 BURAYI MOBİL UYGULAMADAN ALDIĞIN BİLGİLERLE DOLDUR ---
          const firebaseConfig = {
-      apiKey: "AIzaSyB_zE9V8BtMtDjCyeT2FW8IqTe7CN4cSL8",
-      authDomain: "lifeos-app-82013.firebaseapp.com",
-      projectId: "lifeos-app-82013",
-      storageBucket: "lifeos-app-82013.firebasestorage.app",
-      messagingSenderId: "890704581310",
-      appId: "1:890704581310:web:f9aa83314a207eda6904ef",
-    };
+  apiKey: "AIzaSyB_zE9V8BtMtDjCyeT2FW8IqTe7CN4cSL8",
+  authDomain: "lifeos-app-82013.firebaseapp.com",
+  projectId: "lifeos-app-82013",
+  storageBucket: "lifeos-app-82013.firebasestorage.app",
+  messagingSenderId: "890704581310",
+  appId: "1:890704581310:web:f9aa83314a207eda6904ef",
+};
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            window.db = getFirestore(app);
-            window.doc = doc;
-            window.onSnapshot = onSnapshot;
-            window.setDoc = setDoc;
-        } catch(e) { console.error(e); }
+        // Config kontrolü ve başlatma
+        if (firebaseConfig.apiKey !== "BURAYA_API_KEY_YAPISTIR") {
+            try {
+                const app = initializeApp(firebaseConfig);
+                window.db = getFirestore(app);
+                window.doc = doc;
+                window.onSnapshot = onSnapshot;
+                window.setDoc = setDoc;
+            } catch(e) { console.error("Firebase Hatası:", e); }
+        } else {
+            window.configError = true;
+        }
     </script>
 
     <style>
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: #e5e7eb; margin: 0; padding: 0; height: 100dvh; display: flex; justify-content: center; overflow: hidden; }
-        #root { width: 100%; max-width: 28rem; height: 100%; background-color: white; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        
+        body { 
+            font-family: 'Inter', system-ui, sans-serif; 
+            background-color: #e5e7eb; 
+            margin: 0; 
+            padding: 0; 
+            height: 100dvh; 
+            display: flex; 
+            justify-content: center; 
+            overflow: hidden; 
+        }
+        #root { 
+            width: 100%; 
+            max-width: 28rem; 
+            height: 100%; 
+            background-color: white; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); 
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -61,6 +88,30 @@
         // Varsayılanlar
         const DEFAULT_HABITS = [{ id: 'h1', title: 'Yatağı Topla', icon: '🛏️' }, { id: 'h2', title: 'Kitap Oku', icon: '📖' }];
         const DEFAULT_REWARDS = [{ id: 1, title: "Kahve", cost: 20, icon: "☕" }];
+
+        // --- GÜVENLİ ICON BİLEŞENİ (HATA DÜZELTİLDİ) ---
+        const Icon = ({ name, size=20, className="", color="currentColor" }) => {
+            // kebab-case -> camelCase dönüşümü (örn: shopping-bag -> shoppingBag)
+            const iconName = name.split('-').map((part, index) => {
+                if (index === 0) return part;
+                return part.charAt(0).toUpperCase() + part.slice(1);
+            }).join('');
+
+            const iconNode = lucide.icons[iconName];
+            if (!iconNode) return null;
+
+            const svgHtml = iconNode.toSvg({
+                class: className,
+                width: size,
+                height: size,
+                stroke: color,
+                "stroke-width": "2",
+                "stroke-linecap": "round",
+                "stroke-linejoin": "round"
+            });
+
+            return <span dangerouslySetInnerHTML={{ __html: svgHtml }} style={{display:'flex', alignItems:'center', justifyContent:'center'}} />;
+        };
 
         // --- SVG HALKA ---
         const HabitRing = ({ total, completed, size = 46 }) => {
@@ -96,13 +147,22 @@
             )
         }
 
-        // --- ICON BİLEŞENİ ---
-        const Icon = ({ name, size=20, className="", color="currentColor" }) => {
-            useEffect(() => { if(window.lucide) window.lucide.createIcons(); });
-            return <i data-lucide={name} width={size} height={size} className={className} style={{color}}></i>;
-        };
-
         function App() {
+            // --- CONFIG KONTROLÜ ---
+            if (window.configError) {
+                return (
+                    <div className="h-full flex flex-col items-center justify-center p-10 text-center space-y-4">
+                        <div className="bg-red-100 p-4 rounded-full text-red-500"><Icon name="alert-triangle" size={48} /></div>
+                        <h2 className="text-xl font-bold text-gray-800">Ayarlar Eksik!</h2>
+                        <p className="text-gray-500 text-sm">
+                            Lütfen <code>index.html</code> dosyasını açıp en üstteki 
+                            <strong> firebaseConfig</strong> kısmına kendi anahtarlarını yapıştır.
+                        </p>
+                        <div className="text-xs bg-gray-100 p-2 rounded border font-mono text-gray-600">apiKey: "BURAYA_..."</div>
+                    </div>
+                );
+            }
+
             const [data, setData] = useState(null);
             const [activeTab, setActiveTab] = useState('planner');
             const [selectedDate, setSelectedDate] = useState(new Date());
@@ -110,7 +170,7 @@
             const [form, setForm] = useState({});
             const [flippedCards, setFlippedCards] = useState({}); 
 
-            // --- FIREBASE SYNC ---
+            // --- FIREBASE BAĞLANTISI ---
             useEffect(() => {
                 const checkDB = setInterval(() => {
                     if (window.db) {
@@ -125,12 +185,10 @@
                             }
                         });
                     }
-                }, 100);
+                }, 200);
             }, []);
 
-            useEffect(() => { if(data) lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
-
-            if (!data) return <div className="h-full w-full flex flex-col items-center justify-center text-indigo-600 font-bold animate-pulse"><Icon name="loader-2" className="animate-spin mb-2"/> Yükleniyor...</div>;
+            if (!data) return <div className="h-full w-full flex flex-col items-center justify-center text-indigo-600 font-bold animate-pulse"><Icon name="loader-2" size={32} className="animate-spin mb-2"/> Yükleniyor...</div>;
 
             // --- YARDIMCILAR ---
             const getDateKey = (d) => {
@@ -149,29 +207,29 @@
             };
             const updateGold = (amount) => saveToFirebase({...data, gold: data.gold + amount});
 
-            // --- PUANLAMA VE MESAJLAR ---
+            // --- PUANLAMA ---
             const getDailyStatus = (dayTasks) => {
-                 if (!dayTasks || dayTasks.length === 0) return { score: 0, text: "Plan yok", color: "bg-gray-100 text-gray-400 border-gray-200" };
+                 if (!dayTasks || dayTasks.length === 0) return { text: "Plan Yok", color: "bg-gray-100 text-gray-400 border-gray-200" };
                  let doneCount = 0;
                  dayTasks.forEach(t => {
                     if(t.subItems) doneCount += (t.subItems.filter(Boolean).length / t.subItems.length);
                     else if(t.completed) doneCount += 1;
                  });
                  const p = (doneCount / dayTasks.length) * 100;
-                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 border-red-100" };
-                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-500 border-orange-100" };
-                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-600 border-yellow-100" };
-                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-600 border-green-100" };
-                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-600 border-cyan-100" };
+                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 border-red-100 text-white" };
+                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-600 border-orange-100" };
+                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-700 border-yellow-100" };
+                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-700 border-green-100" };
+                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-700 border-cyan-100" };
             };
             const dailyStatus = getDailyStatus(currentDayData.tasks);
 
-            // --- İŞLEMLER (Ekleme/Silme/Güncelleme) ---
+            // --- İŞLEMLER ---
             const toggleHabit = (id) => {
                 const isDone = (currentDayData.habits || []).includes(id);
                 let newHabits = isDone ? currentDayData.habits.filter(h => h !== id) : [...(currentDayData.habits||[]), id];
                 let goldChange = 0;
-                if (dateKey === todayKey) goldChange = isDone ? -10 : 10;
+                if (dateKey === todayKey) goldChange = isDone ? -5 : 5;
                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, habits: newHabits } };
                 saveToFirebase({ ...data, history: newHistory, gold: data.gold + goldChange });
             };
@@ -212,7 +270,7 @@
                                 }
                                 return p;
                             });
-                            if (dateKey === todayKey) goldChange = wasDone ? -10 : 10;
+                            if (dateKey === todayKey) goldChange = wasDone ? -5 : 5;
                         }
                         const allDone = newSub.every(Boolean);
                         return { ...t, subItems: newSub, completed: allDone };
@@ -244,9 +302,7 @@
             };
 
             const deleteProject = (pid) => {
-                if(confirm("Projeyi silmek istiyor musun?")) {
-                     saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
-                }
+                if(confirm("Silmek istiyor musun?")) saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
             };
 
             const addHabit = () => {
@@ -284,7 +340,7 @@
 
             // --- RENDER ---
             return (
-                <div className="w-full h-full flex flex-col bg-white relative">
+                <div id="app-container" className="flex flex-col h-full bg-white relative overflow-hidden">
                     
                     {/* HEADER */}
                     <div className="p-5 bg-white border-b flex justify-between items-center z-20 shrink-0">
@@ -312,10 +368,9 @@
                         </div>
                     )}
 
-                    {/* CONTENT AREA */}
+                    {/* CONTENT */}
                     <div className="flex-1 overflow-y-auto p-5 bg-gray-50/30 space-y-6 no-scrollbar pb-24">
                         
-                        {/* --- PLANNER --- */}
                         {activeTab === 'planner' && (
                             <>
                                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 overflow-x-auto whitespace-nowrap no-scrollbar flex gap-4">
@@ -329,7 +384,6 @@
                                         )
                                     })}
                                 </div>
-
                                 <div className="space-y-3">
                                     {(currentDayData.tasks||[]).map(t => (
                                         <div key={t.id} className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-3 transition-all ${t.completed ? 'opacity-60':''}`}>
@@ -496,7 +550,7 @@
                     </div>
 
                     {/* BOTTOM NAV */}
-                    <div className="bg-white border-t border-gray-100 flex justify-between items-end px-6 pb-6 pt-3 shrink-0">
+                    <div className="bg-white border-t border-gray-100 flex justify-between items-end px-6 pb-6 pt-3 shrink-0 z-30">
                         <button onClick={() => setActiveTab('calendar')} className={`flex flex-col items-center gap-1 ${activeTab === 'calendar' ? 'text-indigo-600' : 'text-gray-400'}`}>
                             <Icon name="calendar" size={24} />
                             <span className="text-[10px] font-bold tracking-wide">TAKVİM</span>
@@ -526,8 +580,8 @@
 
                     {/* MODALS */}
                     {modal.open && (
-                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in">
-                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
+                        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-slide-up">
+                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl">
                                 <div className="flex justify-between mb-4">
                                     <h3 className="font-bold text-lg uppercase text-gray-800">{modal.type.replace('_', ' ')}</h3>
                                     <button onClick={() => setModal({open:false})}><Icon name="x" className="text-gray-400 hover:text-gray-600"/></button>
