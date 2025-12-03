@@ -16,15 +16,15 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- 🔥 BURAYI KENDİ BİLGİLERİNLE DOLDUR ---
+        // --- 🔥 BURAYI MOBİL UYGULAMADAKİ AYNISIYLA DOLDUR ---
         const firebaseConfig = {
-  apiKey: "AIzaSyB_zE9V8BtMtDjCyeT2FW8IqTe7CN4cSL8",
-  authDomain: "lifeos-app-82013.firebaseapp.com",
-  projectId: "lifeos-app-82013",
-  storageBucket: "lifeos-app-82013.firebasestorage.app",
-  messagingSenderId: "890704581310",
-  appId: "1:890704581310:web:f9aa83314a207eda6904ef",
-};
+            apiKey: "BURAYA_API_KEY_YAPISTIR",
+            authDomain: "BURAYA_AUTH_DOMAIN_YAPISTIR",
+            projectId: "BURAYA_PROJECT_ID_YAPISTIR",
+            storageBucket: "BURAYA_STORAGE_BUCKET_YAPISTIR",
+            messagingSenderId: "BURAYA_SENDER_ID_YAPISTIR",
+            appId: "BURAYA_APP_ID_YAPISTIR"
+        };
 
         try {
             const app = initializeApp(firebaseConfig);
@@ -32,54 +32,42 @@
             window.doc = doc;
             window.onSnapshot = onSnapshot;
             window.setDoc = setDoc;
-        } catch(e) { console.error("Firebase Hatası:", e); }
+        } catch(e) { console.error(e); }
     </script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; }
-        /* v5.3 Stilleri */
-        .foggy-event { background: rgba(59, 130, 246, 0.1); backdrop-filter: blur(4px); border-left: 3px solid rgba(59, 130, 246, 0.6); }
-        .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
+        body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; margin: 0; padding: 0; overflow: hidden; }
+        /* Mobil tarayıcılar için tam ekran fix */
+        #root { height: 100dvh; display: flex; flex-direction: column; max-width: 28rem; margin: 0 auto; background-color: white; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Modal Animasyonu */
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .animate-in { animation: fadeIn 0.2s ease-out forwards; }
+        /* Modal animasyon */
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        const USER_DOC_ID = "my_life_os_data_v6"; // Mobille aynı ID
+        const { useState, useEffect } = React;
+        const USER_DOC_ID = "my_life_os_data_v6"; 
 
-        // --- İÇERİK (SENİN İSTEDİĞİN LİSTE) ---
+        // Varsayılanlar
         const DEFAULT_REWARDS = [
-            { id: 1, title: "1 Bölüm Dizi", cost: 50, icon: "🎬" },
-            { id: 2, title: "Kahve Molası", cost: 20, icon: "☕" },
-            { id: 3, title: "30 Dk Oyun", cost: 40, icon: "🎮" },
-            { id: 4, title: "Tatlı/Çikolata", cost: 30, icon: "🍫" },
-            { id: 5, title: "Geç Uyanma", cost: 80, icon: "🛌" },
-            { id: 6, title: "Dışarıda Yemek", cost: 150, icon: "🍔" },
-            { id: 7, title: "20 dk Sosyal Medya", cost: 25, icon: "📱" },
-            { id: 8, title: "Yeni Kitap", cost: 200, icon: "📚" },
-            { id: 9, title: "Film Gecesi", cost: 100, icon: "🍿" },
-            { id: 10, title: "Tembellik Hakkı", cost: 60, icon: "🦥" },
+            { id: 1, title: "1 Bölüm Dizi", cost: 50, icon: "🎬" }, { id: 2, title: "Kahve Molası", cost: 20, icon: "☕" },
+            { id: 3, title: "30 Dk Oyun", cost: 40, icon: "🎮" }, { id: 4, title: "Tatlı/Çikolata", cost: 30, icon: "🍫" },
+            { id: 5, title: "Geç Uyanma", cost: 80, icon: "🛌" }, { id: 6, title: "Dışarıda Yemek", cost: 150, icon: "🍔" },
+            { id: 7, title: "20 dk Sosyal Medya", cost: 25, icon: "📱" }, { id: 8, title: "Yeni Kitap", cost: 200, icon: "📚" },
+            { id: 9, title: "Film Gecesi", cost: 100, icon: "🍿" }, { id: 10, title: "Tembellik Hakkı", cost: 60, icon: "🦥" },
             { id: 11, title: "1 Bölüm Anime", cost: 25, icon: "🍥" }
         ];
-
         const DEFAULT_HABITS = [
-            { id: 'h1', title: 'Yatağı Topla', icon: '🛏️' },
-            { id: 'h2', title: 'Kitap Oku', icon: '📖' },
-            { id: 'h3', title: 'Yarınını Planla', icon: '📋' },
-            { id: 'h4', title: 'Alarmı Erteleme', icon: '⏰' }
+            { id: 'h1', title: 'Yatağı Topla', icon: '🛏️' }, { id: 'h2', title: 'Kitap Oku', icon: '📖' },
+            { id: 'h3', title: 'Yarınını Planla', icon: '📋' }, { id: 'h4', title: 'Alarmı Erteleme', icon: '⏰' }
         ];
 
-        // --- SVG HALKA (ALTIN RENGİ) ---
+        // --- SVG HALKA ---
         const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
             var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
             return { x: centerX + (radius * Math.cos(angleInRadians)), y: centerY + (radius * Math.sin(angleInRadians)) };
@@ -102,8 +90,7 @@
                         const start = i * segmentAngle + (gap/2);
                         const end = (i + 1) * segmentAngle - (gap/2);
                         const isCompleted = i < completed;
-                        // Altın Rengi ve Silik Gri
-                        const color = isCompleted ? "#EAB308" : "rgba(200, 200, 200, 0.2)"; 
+                        const color = isCompleted ? "#EAB308" : "rgba(200, 200, 200, 0.15)"; 
                         const strokeWidth = isCompleted ? 2.5 : 2;
                         const effectiveEnd = total === 1 ? start + 359.9 : end;
                         return <path key={i} d={describeArc(center, center, radius, start, effectiveEnd)} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" />
@@ -112,6 +99,7 @@
             )
         }
 
+        // --- ICON BİLEŞENİ ---
         const Icon = ({ name, size=20, className="" }) => {
             useEffect(() => { lucide.createIcons(); }, [name]);
             return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -125,37 +113,30 @@
             const [form, setForm] = useState({});
             const [flippedCards, setFlippedCards] = useState({}); 
 
-            // --- FIREBASE BAĞLANTISI (v5.3 Yapısına Entegre) ---
+            // --- FIREBASE BAĞLANTISI ---
             useEffect(() => {
                 const checkDB = setInterval(() => {
                     if (window.db) {
                         clearInterval(checkDB);
-                        // Real-time Listener
                         window.onSnapshot(window.doc(window.db, "lifeos_data", USER_DOC_ID), (doc) => {
                             if (doc.exists()) {
                                 setData(doc.data());
                             } else {
-                                // İlk defa çalışıyorsa
+                                // İlk açılış
                                 const initData = { projects: [], history: {}, habits: DEFAULT_HABITS, rewards: DEFAULT_REWARDS, gold: 0 };
                                 window.setDoc(window.doc(window.db, "lifeos_data", USER_DOC_ID), initData);
                                 setData(initData);
                             }
                         });
                     }
-                }, 200);
+                }, 100);
             }, []);
 
-            // İkonları her render'da güncelle
-            useEffect(() => { if(data) lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
+            useEffect(() => { lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
 
-            if (!data) return (
-                <div className="h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-400 font-medium">
-                    <div className="animate-spin mb-2"><Icon name="loader-2" size={32}/></div>
-                    <div>Life OS Başlatılıyor...</div>
-                </div>
-            );
+            if (!data) return <div className="h-screen flex items-center justify-center text-indigo-600 font-bold animate-pulse">LifeOS Yükleniyor...</div>;
 
-            // --- TARİH & VERİ ---
+            // --- YARDIMCILAR ---
             const getDateKey = (d) => {
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -166,20 +147,35 @@
             const todayKey = getDateKey(new Date());
             const currentDayData = data.history[dateKey] || { tasks: [], habits: [], journal: null };
 
-            // --- KAYDETME FONKSİYONU ---
             const saveToFirebase = (newData) => {
-                setData(newData); // Hızlı UI güncellemesi
+                setData(newData);
                 window.setDoc(window.doc(window.db, "lifeos_data", USER_DOC_ID), newData);
             };
+            const updateGold = (amount) => saveToFirebase({...data, gold: data.gold + amount});
 
-            // --- İŞLEVLER (Mobille Aynı Mantık) ---
+            // --- PUANLAMA ---
+            const getDailyStatus = (dayTasks) => {
+                 if (!dayTasks || dayTasks.length === 0) return { score: 0, text: "Plan yok", color: "bg-gray-100 text-gray-400 border-gray-200" };
+                 let doneCount = 0;
+                 dayTasks.forEach(t => {
+                    if(t.subItems) doneCount += (t.subItems.filter(Boolean).length / t.subItems.length);
+                    else if(t.completed) doneCount += 1;
+                 });
+                 const p = (doneCount / dayTasks.length) * 100;
+                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 border-red-100" };
+                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-500 border-orange-100" };
+                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-600 border-yellow-100" };
+                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-600 border-green-100" };
+                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-600 border-cyan-100" };
+            };
+            const dailyStatus = getDailyStatus(currentDayData.tasks);
+
+            // --- EYLEMLER ---
             const toggleHabit = (id) => {
                 const isDone = (currentDayData.habits || []).includes(id);
                 let newHabits = isDone ? currentDayData.habits.filter(h => h !== id) : [...(currentDayData.habits||[]), id];
-                
                 let goldChange = 0;
-                if (dateKey === todayKey) goldChange = isDone ? -5 : 5;
-
+                if (dateKey === todayKey) goldChange = isDone ? -10 : 10;
                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, habits: newHabits } };
                 saveToFirebase({ ...data, history: newHistory, gold: data.gold + goldChange });
             };
@@ -198,10 +194,8 @@
                 const task = currentDayData.tasks.find(t => t.id === id);
                 const newStatus = !task.completed;
                 const updatedTasks = currentDayData.tasks.map(t => t.id === id ? {...t, completed: newStatus} : t);
-                
                 let goldChange = 0;
                 if (dateKey === todayKey) goldChange = newStatus ? 10 : -10;
-
                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, tasks: updatedTasks } };
                 saveToFirebase({ ...data, history: newHistory, gold: data.gold + goldChange });
             };
@@ -209,30 +203,26 @@
             const toggleSubItem = (taskId, idx) => {
                 let goldChange = 0;
                 let projectsUpdate = [...data.projects];
-
                 const updatedTasks = currentDayData.tasks.map(t => {
                     if (t.id === taskId) {
                         const newSub = [...t.subItems];
                         const wasDone = newSub[idx];
                         newSub[idx] = !wasDone;
-                        
                         if (t.type === 'project_slice') {
                             projectsUpdate = projectsUpdate.map(p => {
                                 if (p.id === t.pid) {
                                     const change = wasDone ? -1 : 1;
-                                    // 0'ın altına düşmesin
                                     return { ...p, currentUnit: Math.max(0, (p.currentUnit||0) + change) };
                                 }
                                 return p;
                             });
-                            if (dateKey === todayKey) goldChange = wasDone ? -5 : 5;
+                            if (dateKey === todayKey) goldChange = wasDone ? -10 : 10;
                         }
                         const allDone = newSub.every(Boolean);
                         return { ...t, subItems: newSub, completed: allDone };
                     }
                     return t;
                 });
-
                 const newHistory = { ...data.history, [dateKey]: { ...currentDayData, tasks: updatedTasks } };
                 saveToFirebase({ ...data, history: newHistory, projects: projectsUpdate, gold: data.gold + goldChange });
             };
@@ -263,7 +253,7 @@
             };
 
             const deleteProject = (pid) => {
-                if(confirm("Projeyi silmek istiyor musun?")) {
+                if(confirm("Silmek istediğine emin misin?")) {
                      saveToFirebase({...data, projects: data.projects.filter(p => p.id !== pid)});
                 }
             };
@@ -280,7 +270,7 @@
             };
             const deleteReward = (id) => saveToFirebase({...data, rewards: data.rewards.filter(r => r.id !== id)});
             const buyReward = (r) => {
-                if(data.gold >= r.cost && confirm(`${r.title} almak istiyor musun?`)) updateGold(-r.cost);
+                if(data.gold >= r.cost && confirm(`${r.title} al?`)) updateGold(-r.cost);
                 else if(data.gold < r.cost) alert("Para yok!");
             };
 
@@ -290,34 +280,32 @@
                 setModal({open:false});
             };
 
-            const getDailyStatus = (dayTasks) => {
-                 if (!dayTasks || dayTasks.length === 0) return { score: 0, text: "Plan yok", color: "bg-gray-100 text-gray-400" };
-                 let doneCount = 0;
-                 dayTasks.forEach(t => {
-                    if(t.subItems) doneCount += (t.subItems.filter(Boolean).length / t.subItems.length);
-                    else if(t.completed) doneCount += 1;
-                 });
-                 const p = (doneCount / dayTasks.length) * 100;
-                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500" };
-                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-500" };
-                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-600" };
-                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-600" };
-                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-600" };
+            const openModal = (type, d=null) => {
+                setModal({open: true, type, data: d});
+                if(type === 'project_form') {
+                    if(d) setForm({ id: d.id, title: d.title, total: d.totalUnit, unit: d.unit, estTime: d.totalEstTime, current: d.currentUnit, notes: d.notes });
+                    else setForm({ title: '', total: '', unit: '', estTime: '', current: '' });
+                } else if(type === 'journal') {
+                    setForm({ mood: currentDayData.journal?.mood || '😐', note: currentDayData.journal?.note || '' });
+                } else {
+                    setForm({});
+                }
             };
-            const dailyStatus = getDailyStatus(currentDayData.tasks);
 
-
-            // --- RENDER (v5.3 Layout) ---
+            // --- RENDER ---
             return (
                 <div className="flex flex-col h-screen max-w-md mx-auto bg-white shadow-2xl overflow-hidden border-x border-gray-200 relative">
                     
                     {/* HEADER */}
                     <div className="p-5 bg-white border-b flex justify-between items-center z-20">
                         <div>
-                            <div className="text-[10px] font-bold text-gray-400 uppercase">DURUM</div>
-                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setForm({mood:currentDayData.journal?.mood, note:currentDayData.journal?.note}); setModal({type:'journal'}); }}>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">DURUM</div>
+                            <div className="flex items-center gap-2 cursor-pointer" onClick={() => openModal('journal')}>
                                 <div className={`px-2 py-1 rounded text-xs font-bold border ${dailyStatus.color}`}>{dailyStatus.text}</div>
-                                <span className="animate-pulse text-green-500">●</span>
+                                <span className="relative flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                </span>
                             </div>
                         </div>
                         <div className="bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100 flex items-center gap-1 text-yellow-600 font-bold">
@@ -325,7 +313,7 @@
                         </div>
                     </div>
 
-                    {/* DATE NAV (Sadece Planner'da) */}
+                    {/* DATE NAV (Planner only) */}
                     {activeTab === 'planner' && (
                         <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-100">
                              <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))}><Icon name="chevron-left" /></button>
@@ -364,7 +352,7 @@
                                     {(currentDayData.tasks||[]).map(t => (
                                         <div key={t.id} className={`bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start gap-3 transition-all ${t.completed ? 'opacity-60':''}`}>
                                             {t.type === 'simple' ? 
-                                                <button onClick={() => toggleTask(t.id)} className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${t.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-500'}`}>{t.completed && <Icon name="check" size={14} />}</button>
+                                                <button onClick={() => toggleTask(t.id)} className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${t.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-500'}`}><Icon name="check" size={14} /></button>
                                                 : <div className="mt-1 w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center text-[10px] font-bold text-indigo-600">{t.subItems.filter(Boolean).length}</div>
                                             }
                                             <div className="flex-1">
@@ -385,14 +373,14 @@
                                         </div>
                                     ))}
                                 </div>
-                                <button onClick={() => {setForm({}); setModal({type:'selection'});}} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center gap-2"><Icon name="plus"/> Görev Ekle</button>
+                                <button onClick={() => openModal('selection')} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center gap-2"><Icon name="plus"/> Görev Ekle</button>
                             </>
                         )}
 
                         {/* --- PROJECTS --- */}
                         {activeTab === 'projects' && (
                             <div className="space-y-6">
-                                <div className="flex justify-between items-center"><h2 className="font-bold text-gray-700">Büyük Hedefler</h2><button onClick={() => {setForm({}); setModal({type:'project_form'});}} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded font-bold">+ YENİ</button></div>
+                                <div className="flex justify-between items-center"><h2 className="font-bold text-gray-700">Büyük Hedefler</h2><button onClick={() => openModal('project_form')} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded font-bold">+ YENİ</button></div>
                                 {data.projects.map(p => {
                                     const pct = Math.min(100, Math.round(((p.currentUnit||0) / p.totalUnit) * 100));
                                     const isFlipped = flippedCards[p.id];
@@ -405,7 +393,7 @@
                                                         <div className="flex justify-between items-start">
                                                             <h3 className="font-bold text-lg">{p.title}</h3>
                                                             <div className="flex gap-2">
-                                                                <button onClick={() => {setForm({id:p.id, title:p.title, total:p.totalUnit, unit:p.unit, estTime:p.totalEstTime, current:p.currentUnit, notes:p.notes}); setModal({type:'project_form'});}}><Icon name="edit-2" className="w-4 h-4 text-gray-400 hover:text-indigo-600"/></button>
+                                                                <button onClick={() => openModal('project_form', p)}><Icon name="edit-2" className="w-4 h-4 text-gray-400 hover:text-indigo-600"/></button>
                                                                 <button onClick={() => setFlippedCards({...flippedCards, [p.id]: true})}><Icon name="refresh-cw" className="w-4 h-4 text-gray-400 hover:text-indigo-600"/></button>
                                                             </div>
                                                         </div>
@@ -432,22 +420,22 @@
                             </div>
                         )}
 
-                        {/* --- HABITS (Düzenleme Sayfası) --- */}
+                        {/* --- HABITS EDIT --- */}
                         {activeTab === 'habits' && (
                             <div className="space-y-4">
                                 <h2 className="font-bold text-gray-700">Rutin Düzenleyici</h2>
                                 {data.habits.map(h => (
-                                    <div key={h.id} className="flex justify-between items-center p-3 bg-white rounded-xl border">
+                                    <div key={h.id} className="flex justify-between items-center p-3 bg-white rounded-xl border hover:shadow-sm">
                                         <div className="flex items-center gap-3"><span className="text-2xl">{h.icon}</span><span className="font-bold">{h.title}</span></div>
-                                        <button onClick={() => deleteHabit(h.id)} className="text-red-400"><Icon name="trash-2" /></button>
+                                        <button onClick={() => deleteHabit(h.id)} className="text-red-400 hover:text-red-600"><Icon name="trash-2" /></button>
                                     </div>
                                 ))}
                                 <div className="pt-4 border-t mt-4">
                                     <div className="flex gap-2">
-                                        <input className="w-16 p-2 border rounded text-center" placeholder="🧘" value={form.icon||''} onChange={e=>setForm({...form, icon:e.target.value})} />
-                                        <input className="flex-1 p-2 border rounded" placeholder="Rutin Adı" value={form.title||''} onChange={e=>setForm({...form, title:e.target.value})} />
+                                        <input className="w-16 p-2 border rounded-xl text-center" placeholder="🧘" value={form.icon||''} onChange={e=>setForm({...form, icon:e.target.value})} />
+                                        <input className="flex-1 p-2 border rounded-xl" placeholder="Rutin Adı" value={form.title||''} onChange={e=>setForm({...form, title:e.target.value})} />
                                     </div>
-                                    <button onClick={addHabit} className="w-full bg-indigo-600 text-white py-2 rounded mt-2 font-bold">Ekle</button>
+                                    <button onClick={addHabit} className="w-full bg-indigo-600 text-white py-3 rounded-xl mt-2 font-bold shadow-lg hover:bg-indigo-700 transition">Ekle</button>
                                 </div>
                             </div>
                         )}
@@ -468,7 +456,7 @@
                                             <div className="text-xs font-bold text-yellow-600 mt-1">{r.cost} Altın</div>
                                         </div>
                                     ))}
-                                    <button onClick={() => {setForm({}); setModal({type:'reward_new'})}} className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-gray-400 min-h-[100px] hover:border-indigo-400 hover:text-indigo-600"><Icon name="plus"/><span className="text-xs font-bold mt-1">Ödül Ekle</span></button>
+                                    <button onClick={() => openModal('reward_new')} className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-gray-400 min-h-[100px] hover:border-indigo-400 hover:text-indigo-600 transition"><Icon name="plus"/><span className="text-xs font-bold mt-1">Ödül Ekle</span></button>
                                 </div>
                             </div>
                         )}
@@ -536,8 +524,8 @@
 
                     {/* MODALS */}
                     {modal.open && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in">
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in">
+                            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-slide-up">
                                 <div className="flex justify-between mb-4">
                                     <h3 className="font-bold text-lg uppercase text-gray-800">{modal.type.replace('_', ' ')}</h3>
                                     <button onClick={() => setModal({open:false})}><Icon name="x" className="text-gray-400 hover:text-gray-600"/></button>
@@ -545,11 +533,11 @@
 
                                 {modal.type === 'selection' && (
                                     <div className="space-y-3">
-                                        <button onClick={() => {setForm({}); setModal({type:'simple'});}} className="w-full p-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-left flex items-center gap-3 hover:bg-indigo-100 transition"><div className="bg-white p-2 rounded-full"><Icon name="plus" className="w-4 h-4"/></div> Tek Seferlik Görev</button>
+                                        <button onClick={() => openModal('simple')} className="w-full p-4 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-left flex items-center gap-3 hover:bg-indigo-100 transition"><div class="bg-white p-2 rounded-full"><Icon name="plus" className="w-4 h-4"/></div> Tek Seferlik Görev</button>
                                         <div className="text-xs font-bold text-gray-400 mt-4 ml-1">HEDEFLERDEN ÇEK</div>
                                         <div className="max-h-48 overflow-y-auto space-y-2 no-scrollbar">
                                             {data.projects.map(p => (
-                                                <button key={p.id} onClick={() => {setForm({amount:''}); setModal({type:'import', data:p});}} className="w-full p-3 border rounded-xl text-left text-sm font-bold hover:bg-gray-50 hover:border-indigo-300 transition flex justify-between"><span>{p.title}</span><span className="text-gray-400 text-xs">{p.unit}</span></button>
+                                                <button key={p.id} onClick={() => openModal('import', p)} className="w-full p-3 border rounded-xl text-left text-sm font-bold hover:bg-gray-50 hover:border-indigo-300 transition flex justify-between"><span>{p.title}</span><span class="text-gray-400 text-xs">{p.unit}</span></button>
                                             ))}
                                         </div>
                                     </div>
