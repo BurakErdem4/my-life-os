@@ -22,14 +22,14 @@
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // --- 🔥 BURAYI MOBİL UYGULAMADAKİ AYNISIYLA DOLDUR ---
-         const firebaseConfig = {
-  apiKey: "AIzaSyB_zE9V8BtMtDjCyeT2FW8IqTe7CN4cSL8",
-  authDomain: "lifeos-app-82013.firebaseapp.com",
-  projectId: "lifeos-app-82013",
-  storageBucket: "lifeos-app-82013.firebasestorage.app",
-  messagingSenderId: "890704581310",
-  appId: "1:890704581310:web:f9aa83314a207eda6904ef",
-};
+        const firebaseConfig = {
+            apiKey: "BURAYA_API_KEY_YAPISTIR",
+            authDomain: "BURAYA_AUTH_DOMAIN_YAPISTIR",
+            projectId: "BURAYA_PROJECT_ID_YAPISTIR",
+            storageBucket: "BURAYA_STORAGE_BUCKET_YAPISTIR",
+            messagingSenderId: "BURAYA_SENDER_ID_YAPISTIR",
+            appId: "BURAYA_APP_ID_YAPISTIR"
+        };
 
         try {
             const app = initializeApp(firebaseConfig);
@@ -41,27 +41,8 @@
     </script>
 
     <style>
-        /* Mobil App Hissiyatı İçin Sabit Düzen */
-        body { 
-            font-family: 'Inter', system-ui, sans-serif; 
-            background-color: #e5e7eb; 
-            margin: 0; 
-            padding: 0; 
-            position: fixed; 
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex; 
-            justify-content: center; 
-            overflow: hidden;
-        }
-        #root { 
-            width: 100%; 
-            max-width: 28rem; /* Mobil genişlik sınırı */
-            height: 100%; 
-            background-color: white; 
-            display: flex; 
-            flex-direction: column; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #e5e7eb; margin: 0; padding: 0; height: 100dvh; display: flex; justify-content: center; }
+        #root { width: 100%; max-width: 28rem; height: 100%; background-color: white; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -71,7 +52,6 @@
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
         
-        /* Modal Animasyon */
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
     </style>
@@ -121,10 +101,11 @@
             )
         }
 
-        // --- ICON BİLEŞENİ ---
+        // --- ICON BİLEŞENİ (Güvenli) ---
         const Icon = ({ name, size=20, className="", color="currentColor" }) => {
-            useEffect(() => { lucide.createIcons(); }, [name]);
-            // Lucide icon isimlerini HTML uyumlu hale getir
+            useEffect(() => { 
+                if(window.lucide) window.lucide.createIcons(); 
+            });
             return <i data-lucide={name} width={size} height={size} className={className} style={{color}}></i>;
         };
 
@@ -151,12 +132,10 @@
                             }
                         });
                     }
-                }, 200);
+                }, 100);
             }, []);
 
-            useEffect(() => { if(data) lucide.createIcons(); }, [data, activeTab, modal, selectedDate]);
-
-            if (!data) return <div className="h-full w-full flex flex-col items-center justify-center text-indigo-600 font-bold animate-pulse"><Icon name="loader-2" className="animate-spin mb-2"/> Yükleniyor...</div>;
+            if (!data) return <div className="h-full w-full flex flex-col items-center justify-center text-indigo-600 font-bold animate-pulse">LifeOS Yükleniyor...</div>;
 
             // --- YARDIMCILAR ---
             const getDateKey = (d) => {
@@ -175,20 +154,20 @@
             };
             const updateGold = (amount) => saveToFirebase({...data, gold: data.gold + amount});
 
-            // --- PUANLAMA VE MESAJLAR (DÜZELDİ) ---
+            // --- PUANLAMA VE MESAJLAR (MOTİVASYON) ---
             const getDailyStatus = (dayTasks) => {
-                 if (!dayTasks || dayTasks.length === 0) return { text: "Plan Yok", color: "bg-gray-100 text-gray-400 border-gray-200" };
+                 if (!dayTasks || dayTasks.length === 0) return { score: 0, text: "Plan yok", color: "bg-gray-100 text-gray-400 border-gray-200" };
                  let doneCount = 0;
                  dayTasks.forEach(t => {
                     if(t.subItems) doneCount += (t.subItems.filter(Boolean).length / t.subItems.length);
                     else if(t.completed) doneCount += 1;
                  });
                  const p = (doneCount / dayTasks.length) * 100;
-                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 border-red-100" };
-                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-500 border-orange-100" };
-                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-600 border-yellow-100" };
-                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-600 border-green-100" };
-                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-600 border-cyan-100" };
+                 if(p === 0) return { text: "Başlangıç...", color: "bg-red-50 text-red-500 border-red-100 text-white" };
+                 if(p < 40) return { text: "Daha iyi olabilirsin", color: "bg-orange-50 text-orange-600 border-orange-100" };
+                 if(p < 70) return { text: "Gelişiyorsun", color: "bg-yellow-50 text-yellow-700 border-yellow-100" };
+                 if(p < 95) return { text: "Çok iyisin", color: "bg-green-50 text-green-700 border-green-100" };
+                 return { text: "Harika bir gün!", color: "bg-cyan-50 text-cyan-700 border-cyan-100" };
             };
             const dailyStatus = getDailyStatus(currentDayData.tasks);
 
@@ -254,7 +233,6 @@
                 saveToFirebase({ ...data, history: newHistory });
             };
 
-            // Proje Kaydetme (Düzenleme ve Yeni)
             const saveProject = () => {
                 const pData = {
                     id: form.id || Date.now(),
@@ -266,11 +244,8 @@
                     notes: form.notes || ''
                 };
                 let newProjs;
-                if (form.id) { // Düzenleme
-                    newProjs = data.projects.map(p => p.id === form.id ? {...p, ...pData} : p);
-                } else { // Yeni
-                    newProjs = [...data.projects, pData];
-                }
+                if (form.id) { newProjs = data.projects.map(p => p.id === form.id ? {...p, ...pData} : p); } 
+                else { newProjs = [...data.projects, pData]; }
                 saveToFirebase({...data, projects: newProjs});
                 setModal({open:false});
             };
@@ -313,7 +288,6 @@
                 setForm({});
                 if (type === 'project_form') {
                      if(d) {
-                        // Düzenleme için verileri doldur
                         setForm({ id: d.id, title: d.title, total: d.totalUnit, unit: d.unit, estTime: d.totalEstTime, current: d.currentUnit, notes: d.notes });
                      } else {
                         setForm({ title: '', total: '', unit: '', estTime: '', current: '' });
